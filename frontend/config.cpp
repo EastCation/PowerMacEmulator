@@ -175,6 +175,7 @@ bool load_config(const std::string& path)
         } else if (section == "emulation") {
             if (key == "realtime") c.realtime = parse_bool(val, c.realtime);
             else if (key == "rhapsody") c.rhapsody = parse_bool(val, c.rhapsody);
+            else if (key == "rhapsody_dr1") c.rhapsody_dr1 = parse_bool(val, c.rhapsody_dr1);
         }
     }
 
@@ -228,6 +229,7 @@ bool save_config(const std::string& path)
     out << "[Emulation]\n";
     out << "realtime=" << (g_cfg.realtime ? 1 : 0) << "\n";
     out << "rhapsody=" << (g_cfg.rhapsody ? 1 : 0) << "\n";
+    out << "rhapsody_dr1=" << (g_cfg.rhapsody_dr1 ? 1 : 0) << "\n";
 
     g_active_config = path;
     return true;
@@ -251,6 +253,22 @@ void apply_machine_defaults()
 void apply_rhapsody_profile()
 {
     g_cfg.rhapsody = true;
+
+    if (g_cfg.rhapsody_dr1) {
+        if (g_cfg.machine != "pm8500" && g_cfg.machine != "pm9500" &&
+            g_cfg.machine != "pm9600")
+            g_cfg.machine = "pm9600";
+        g_cfg.cpu = "604e";
+        if (g_cfg.ram_mb < 512)
+            g_cfg.ram_mb = 512;
+        g_cfg.hdd_bus = "curio";
+        g_cfg.cd_bus  = "curio";
+        g_cfg.ide_hdd.clear();
+        g_cfg.ide_cd.clear();
+        g_cfg.ide_hdd2.clear();
+        invalidate();
+        return;
+    }
 
     if (g_cfg.machine != "pmg3dt" && g_cfg.machine != "pmg3twr")
         g_cfg.machine = "pmg3dt";

@@ -188,6 +188,7 @@ bool write_vm_config(const fs::path& folder, const VmSettings& s, std::string& e
     cfg << "[Emulation]\n";
     cfg << "realtime=1\n";
     cfg << "rhapsody=" << (s.rhapsody ? 1 : 0) << "\n";
+    cfg << "rhapsody_dr1=" << (s.rhapsody_dr1 ? 1 : 0) << "\n";
 
     return true;
 }
@@ -417,6 +418,7 @@ bool load_vm_settings(const std::string& name, VmSettings& out, std::string& err
         out.pci_gpu  = read_ini_value(cfg, "video", "pci_gpu");
         out.net_enabled = read_ini_value(cfg, "network", "enabled") != "0";
         out.rhapsody = read_ini_value(cfg, "emulation", "rhapsody") == "1";
+        out.rhapsody_dr1 = read_ini_value(cfg, "emulation", "rhapsody_dr1") == "1";
 
         if (out.machine != "pm8500" && out.machine != "pm9500" &&
             out.machine != "pm8600" && out.machine != "pm9600" &&
@@ -518,7 +520,7 @@ bool launch_vm(const std::string& name, const std::string& emulator_exe,
             VmSettings vm_settings;
             std::string ignored;
             if (load_vm_settings(name, vm_settings, ignored) &&
-                vm_settings.rhapsody) {
+                (vm_settings.rhapsody || vm_settings.rhapsody_dr1)) {
                 fs::path exe = u8p(emulator_exe);
                 fs::path rhapsody = exe.parent_path() / "RhapsodyEmulator";
 #ifdef _WIN32

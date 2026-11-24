@@ -165,6 +165,10 @@ public:
         rhapsody_->setToolTip(
             "Launch RhapsodyEmulator.exe for this VM. The selected hard disk and\n"
             "CD images are attached to the G3 IDE controller.");
+        dr1_ = new QCheckBox("Rhapsody DR1 compatibility (PM9600 / SCSI)", this);
+        dr1_->setToolTip(
+            "Launch RhapsodyEmulator.exe with the old-world PM9600/Curio SCSI\n"
+            "profile. Rhapsody DR1 does not support G3/IDE.");
 
         auto* form = new QFormLayout();
         form->addRow("Name", name_);
@@ -185,6 +189,7 @@ public:
         form->addRow("PCI video (9500, slot D2)", gpu_);
         form->addRow("Network card", net_);
         form->addRow("Rhapsody mode", rhapsody_);
+        form->addRow("Rhapsody DR1", dr1_);
 
         auto* hint = new QLabel(
             "Mac OS 9.2 requires a PowerPC 750 (G3).\n"
@@ -206,8 +211,19 @@ public:
         connect(rhapsody_, &QCheckBox::toggled, this, [this](bool on) {
             if (!on)
                 return;
+            dr1_->setChecked(false);
             model_->setCurrentIndex(model_->findData("pmg3dt"));
             cpu_->setCurrentIndex(cpu_->findData("750"));
+        });
+        connect(dr1_, &QCheckBox::toggled, this, [this](bool on) {
+            if (!on)
+                return;
+            rhapsody_->setChecked(false);
+            model_->setCurrentIndex(model_->findData("pm9600"));
+            cpu_->setCurrentIndex(cpu_->findData("604e"));
+            ram_->setCurrentIndex(ramIndex(512));
+            hddBus_->setCurrentIndex(hddBus_->findData("curio"));
+            cdBus_->setCurrentIndex(cdBus_->findData("curio"));
         });
         connect(romBrowse_, &QPushButton::clicked, this, [this] {
             QString f = QFileDialog::getOpenFileName(this, "Select Boot ROM",
@@ -254,6 +270,7 @@ public:
         gpu_->setCurrentIndex(gpu_->findData(toQ(s.pci_gpu)));
         net_->setChecked(s.net_enabled);
         rhapsody_->setChecked(s.rhapsody);
+        dr1_->setChecked(s.rhapsody_dr1);
     }
 
     void setName(const QString& n) { name_->setText(n); }
@@ -282,6 +299,7 @@ public:
         s.pci_gpu  = toS(gpu_->currentData().toString());
         s.net_enabled = net_->isChecked();
         s.rhapsody = rhapsody_->isChecked();
+        s.rhapsody_dr1 = dr1_->isChecked();
         return s;
     }
 
@@ -307,6 +325,7 @@ private:
     QComboBox* gpu_;
     QCheckBox* net_;
     QCheckBox* rhapsody_;
+    QCheckBox* dr1_;
 };
 
 class MainWindow : public QMainWindow {
@@ -535,6 +554,7 @@ private:
                 created.ide_hdd2 = s.ide_hdd2;
                 created.net_enabled = s.net_enabled;
                 created.rhapsody = s.rhapsody;
+                created.rhapsody_dr1 = s.rhapsody_dr1;
                 vm::update_vm(toS(dlg.name()), created, err);
             }
         }

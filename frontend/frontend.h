@@ -52,6 +52,7 @@ struct FrontendConfig {
     std::string keyboard     = "Eng_USA";
     bool        realtime     = true;
     bool        rhapsody     = false;
+    bool        rhapsody_dr1 = false;
 };
 
 namespace frontend {

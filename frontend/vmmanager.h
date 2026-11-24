@@ -40,6 +40,7 @@ struct VmSettings {
     std::string ide_hdd2;              // second IDE disk, e.g. BootX image
     bool        net_enabled = true;
     bool        rhapsody = false;
+    bool        rhapsody_dr1 = false;
 };
 
 /** Reads emulator.ini (VM root directory, last used VM). */
