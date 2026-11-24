@@ -56,10 +56,8 @@ AtapiCdrom::AtapiCdrom(std::string name) : AtapiBaseDevice(name) {
 
 int AtapiCdrom::device_postinit() {
     std::string cdr_config = GET_STR_PROP("cdr_config");
-    if (cdr_config.empty()) {
-        LOG_F(ERROR, "%s: cdr_config property is empty", this->name.c_str());
-        return -1;
-    }
+    if (cdr_config.empty())
+        return 0;
 
     std::string bus_id;
     uint32_t    dev_num;
