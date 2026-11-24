@@ -76,6 +76,14 @@ static void sigabrt_handler(int signum) {
     cleanup();
 }
 
+#ifdef POWERMAC_RHAPSODY
+static string appDescription = string(
+    "\nRhapsody Emulator - G3 / IDE edition          "
+    "\nPowerPC Macintosh emulation for Rhapsody DR2. "
+    "\nBased on the DingusPPC engine.                "
+    "\n"
+);
+#else
 static string appDescription = string(
     "\nDingusPPC - Alpha 1.04c (10/4/2026)          "
     "\nWritten by divingkatae, maximumspatium,      "
@@ -85,6 +93,7 @@ static string appDescription = string(
     "\nUse at your own discretion.                  "
     "\n"
 );
+#endif
 
 static uint32_t keyboard_id = 0;
 
@@ -456,6 +465,13 @@ int main(int argc, char** argv) {
         frontend::build_properties();
     }
 
+#ifdef POWERMAC_RHAPSODY
+    if (have_config) {
+        frontend::apply_rhapsody_profile();
+        frontend::build_properties();
+    }
+#endif
+
     // Resolve the ROM before the CLI validator checks it. This also repairs
     // stale paths in VMs that were moved between folders.
     if (bootrom_opt->count() == 0)
@@ -503,7 +519,11 @@ int main(int argc, char** argv) {
     if (execution_mode == interpreter && !log_to_stderr) {
         loguru::g_stderr_verbosity = loguru::Verbosity_OFF;
         loguru::init(argc, argv);
+#ifdef POWERMAC_RHAPSODY
+        loguru::add_file("rhapsody.log", loguru::Append, log_verbosity);
+#else
         loguru::add_file("dingusppc.log", loguru::Append, log_verbosity);
+#endif
     } else {
         loguru::g_stderr_verbosity = log_verbosity;
         loguru::init(argc, argv);

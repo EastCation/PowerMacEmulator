@@ -50,6 +50,9 @@ jobs:
           if (!(Test-Path "build/bin/PowerMacVMManager.exe")) {
             throw "PowerMacVMManager.exe was not built"
           }
+          if (!(Test-Path "build/bin/RhapsodyEmulator.exe")) {
+            throw "RhapsodyEmulator.exe was not built"
+          }
 
           New-Item -ItemType Directory -Path dist -Force | Out-Null
           Copy-Item -Path "build/bin/*" -Destination dist -Recurse -Force

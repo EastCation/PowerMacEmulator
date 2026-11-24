@@ -173,6 +173,7 @@ bool load_config(const std::string& path)
             else if (key == "keyboard")             c.keyboard = val;
         } else if (section == "emulation") {
             if (key == "realtime") c.realtime = parse_bool(val, c.realtime);
+            else if (key == "rhapsody") c.rhapsody = parse_bool(val, c.rhapsody);
         }
     }
 
@@ -224,6 +225,7 @@ bool save_config(const std::string& path)
 
     out << "[Emulation]\n";
     out << "realtime=" << (g_cfg.realtime ? 1 : 0) << "\n";
+    out << "rhapsody=" << (g_cfg.rhapsody ? 1 : 0) << "\n";
 
     g_active_config = path;
     return true;
@@ -241,6 +243,27 @@ void apply_machine_defaults()
         g_cfg.cpu = "604";
     if (g_cfg.machine == "pm9500" && g_cfg.pci_gpu.empty())
         g_cfg.pci_gpu = "none";
+    invalidate();
+}
+
+void apply_rhapsody_profile()
+{
+    g_cfg.rhapsody = true;
+
+    if (g_cfg.machine != "pmg3dt" && g_cfg.machine != "pmg3twr")
+        g_cfg.machine = "pmg3dt";
+    g_cfg.cpu = "750";
+
+    if (g_cfg.ide_hdd.empty() && !g_cfg.scsi_hdd.empty())
+        g_cfg.ide_hdd = g_cfg.scsi_hdd.front();
+    if (g_cfg.ide_cd.empty() && !g_cfg.scsi_cd.empty())
+        g_cfg.ide_cd = g_cfg.scsi_cd.front();
+
+    g_cfg.scsi_hdd.clear();
+    g_cfg.scsi_cd.clear();
+    g_cfg.hdd_bus = "ide";
+    g_cfg.cd_bus  = "ide";
+
     invalidate();
 }
 

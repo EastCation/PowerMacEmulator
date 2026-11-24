@@ -49,6 +49,7 @@ std::string       g_new_cpu     = "750";
 std::string       g_new_hdd_bus = "curio";
 std::string       g_new_cd_bus  = "curio";
 std::string       g_new_gpu     = "none";
+bool              g_new_rhapsody = false;
 int               g_new_ram     = 2;
 int               g_new_disk    = 2;
 
@@ -126,6 +127,7 @@ void open_create()
     g_new_hdd_bus = "curio";
     g_new_cd_bus  = "curio";
     g_new_gpu     = "none";
+    g_new_rhapsody = false;
 
     std::string rom = first_matching("roms", ".ROM");
     if (rom.empty())
@@ -163,6 +165,7 @@ void open_edit()
     g_new_hdd_bus = s.hdd_bus;
     g_new_cd_bus  = s.cd_bus;
     g_new_gpu     = s.pci_gpu;
+    g_new_rhapsody = s.rhapsody;
 
     g_error.clear();
     g_show_create = true;
@@ -237,6 +240,8 @@ void draw_create()
         g_new_gpu = ids[gpu];
     }
 
+    ImGui::Checkbox("Use RhapsodyEmulator (G3 / IDE profile)", &g_new_rhapsody);
+
     ImGui::Spacing();
     ImGui::TextWrapped("Mac OS 9.2 requires a G3 or later CPU. Select the "
                        "PowerPC 750 option for 9.2; use 604/604e for Mac OS 8, "
@@ -261,6 +266,7 @@ void draw_create()
             s.hdd_bus  = g_new_hdd_bus;
             s.cd_bus   = g_new_cd_bus;
             s.pci_gpu  = g_new_gpu;
+            s.rhapsody = g_new_rhapsody;
             std::string err;
             if (vm::update_vm(g_edit_name, s, err)) {
                 g_show_create = false;
@@ -276,6 +282,11 @@ void draw_create()
             if (vm::create_vm(g_new_name, g_new_machine, g_new_cpu,
                               ram_vals[g_new_ram], disk_gb[g_new_disk],
                               g_new_rom, g_new_cd, err)) {
+                vm::VmSettings created;
+                if (vm::load_vm_settings(g_new_name, created, err)) {
+                    created.rhapsody = g_new_rhapsody;
+                    vm::update_vm(g_new_name, created, err);
+                }
                 g_show_create = false;
                 refresh();
                 g_status = "Virtual machine created.";

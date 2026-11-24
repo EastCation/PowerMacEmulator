@@ -499,7 +499,11 @@ class EmuWindow : public QMainWindow {
 public:
     EmuWindow()
     {
+#ifdef POWERMAC_RHAPSODY
+        setWindowTitle("Rhapsody Emulator");
+#else
         setWindowTitle("PowerMac Emulator");
+#endif
         resize(820, 640);
         setAcceptDrops(true);
         QApplication::instance()->installEventFilter(this);
@@ -587,6 +591,8 @@ public:
 
         if (!frontend::cfg().scsi_cd.empty())
             lastCdPath_ = toQ(frontend::cfg().scsi_cd[0]);
+        else if (!frontend::cfg().ide_cd.empty())
+            lastCdPath_ = toQ(frontend::cfg().ide_cd);
 
         capsLed_    = new QLabel("CapsLk", this);
         numLed_     = new QLabel("NumLk", this);
@@ -949,7 +955,11 @@ void frontend_qt_init()
     static char  qt_arg0[] = "PowerMacEmulator";
     static char* qt_argv[] = { qt_arg0, nullptr };
     g_app = new QApplication(qt_argc, qt_argv);
+#ifdef POWERMAC_RHAPSODY
+    QApplication::setApplicationName("Rhapsody Emulator");
+#else
     QApplication::setApplicationName("PowerMac Emulator");
+#endif
 
     g_win = new EmuWindow();
     g_win->show();

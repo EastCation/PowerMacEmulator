@@ -1,13 +1,20 @@
 # PowerMac Emulator
 
 PowerMac Emulator 是一个面向 Power Macintosh / PowerPC Mac 的实验性模拟器前端，
-提供 Qt6 图形界面、虚拟机管理器和 Windows x64 发布版。
+提供 Qt6 图形界面、虚拟机管理器、Rhapsody 专用启动器和 Windows x64 发布版。
 
 > 本模拟器基于 [DingusPPC](https://github.com/dingusdev/dingusppc) 的 PowerPC
 > Macintosh 模拟引擎二次重建；本项目与 DingusPPC 官方项目无隶属关系。
 
 本仓库不包含任何 Apple ROM、Mac OS 安装介质、磁盘镜像或游戏/软件镜像。运行模拟器
 需要用户自行提供合法取得的 ROM 与系统安装介质。
+
+## 可执行文件
+
+- `PowerMacEmulator.exe`：通用模拟器，适用于 Mac OS 8 / 9 和常规配置。
+- `RhapsodyEmulator.exe`：Rhapsody 专用启动器，固定使用 G3 + IDE 配置。
+- `PowerMacVMManager.exe`：虚拟机管理器，可在 VM 设置中切换是否调用
+  `RhapsodyEmulator.exe`。
 
 ## 当前可以实现的功能
 
@@ -37,12 +44,29 @@ PowerMac Emulator 是一个面向 Power Macintosh / PowerPC Mac 的实验性模�
 - **系统**：
   - Mac OS 8.x
   - Mac OS 9.x
-  - Rhapsody DR2（G3/IDE 路径，视配置而定）
+  - Rhapsody DR2（通过 `RhapsodyEmulator.exe` 使用 G3 + IDE 配置）
 - **界面**：
   - Qt 菜单栏、工具栏、状态栏
   - 虚拟机管理器：新建/编辑/启动 VM
+  - VM 设置中的 **Rhapsody mode** 开关
   - 运行时切换 CD、暂停/恢复、重启、退出
   - 可选的 ImGui 备用前端
+
+## Rhapsody 模式
+
+在虚拟机管理器中编辑 VM，勾选 **Use RhapsodyEmulator (G3 / IDE profile)**。
+启动该 VM 时，管理器会调用同目录下的 `RhapsodyEmulator.exe`。
+
+`RhapsodyEmulator.exe` 会自动执行以下配置：
+
+- 机型：Beige G3（`pmg3dt`）
+- CPU：PowerPC 750（G3）
+- 硬盘：VM 设置中选择的硬盘镜像挂到 `Ide0:0`
+- 光驱：VM 设置中选择的 CD 镜像挂到 `Ide1:0`
+- 使用 `rhapsody.log` 作为日志文件
+
+因此 VM 设置中现有的“SCSI 硬盘/CD”字段会被重新解释为 IDE 设备；
+Rhapsody 专用模式需要 G3 ROM。
 
 ## 当前不能做到 / 已知问题
 
@@ -54,7 +78,7 @@ PowerMac Emulator 是一个面向 Power Macintosh / PowerPC Mac 的实验性模�
   - 尚未实现完整的 Open Firmware 启动脚本/`nvramrc` 执行。
 - **G3 MESH/SCSI 不可用**
   - 会出现 `ScsiMesh` 重复设备或 DBDMA `LOAD_QUAD` 错误。
-  - G3 请使用 IDE/ATAPI 路径。
+  - G3 请使用 IDE/ATAPI 路径；`RhapsodyEmulator.exe` 已自动映射到 IDE。
 - **网络尚未实现**
   - MACE 控制器有基础代码，但尚未接入 Slirp 或其他用户态网络后端。
 - **音频输入/麦克风未实现**
@@ -83,6 +107,7 @@ cmake --build build --config Release --parallel
 
 ```text
 build\bin\PowerMacEmulator.exe
+build\bin\RhapsodyEmulator.exe
 build\bin\PowerMacVMManager.exe
 build\bin\SDL2.dll
 build\bin\Qt6*.dll
@@ -95,8 +120,16 @@ build\bin\platforms\...
 
 1. 启动 `PowerMacVMManager.exe`。
 2. 选择或新建 VM 目录，设置机型、CPU、内存、ROM、硬盘和安装光盘。
-3. 选择 VM 并点击 **Start**。
-4. 也可以直接启动 `PowerMacEmulator.exe --run --config <powermac.ini> -b <ROM>`。
+3. 普通 Mac OS 8/9 保持 **Rhapsody mode** 未勾选。
+4. Rhapsody DR2 勾选 **Rhapsody mode**，并使用 G3 ROM。
+5. 选择 VM 并点击 **Start**。
+
+也可以直接启动：
+
+```bat
+PowerMacEmulator.exe --run --config <powermac.ini> -b <ROM>
+RhapsodyEmulator.exe --run --config <powermac.ini> -b <G3-ROM>
+```
 
 ROM、系统盘和 CD 镜像需要用户自行准备，不能随仓库分发。
 
@@ -109,7 +142,8 @@ ROM、系统盘和 CD 镜像需要用户自行准备，不能随仓库分发。
   `PowerMacEmulator-Windows-x64.zip`。
 - 也可以手动触发 `workflow_dispatch`（只上传构建产物，不创建 Release）。
 
-发布包包含模拟器、虚拟机管理器、Qt 运行库、SDL2 和许可证/说明文件。
+发布包包含通用模拟器、Rhapsody 专用模拟器、虚拟机管理器、Qt 运行库、SDL2
+和许可证/说明文件。
 
 ## 许可证
 

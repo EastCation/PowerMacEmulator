@@ -152,6 +152,10 @@ public:
 
         net_ = new QCheckBox("MACE Ethernet (built-in)", this);
         net_->setChecked(true);
+        rhapsody_ = new QCheckBox("Use RhapsodyEmulator (G3 / IDE profile)", this);
+        rhapsody_->setToolTip(
+            "Launch RhapsodyEmulator.exe for this VM. The selected hard disk and\n"
+            "CD images are attached to the G3 IDE controller.");
 
         auto* form = new QFormLayout();
         form->addRow("Name", name_);
@@ -170,10 +174,12 @@ public:
         form->addRow("CD-ROM bus", cdBus_);
         form->addRow("PCI video (9500, slot D2)", gpu_);
         form->addRow("Network card", net_);
+        form->addRow("Rhapsody mode", rhapsody_);
 
         auto* hint = new QLabel(
             "Mac OS 9.2 requires a PowerPC 750 (G3).\n"
-            "Use 604/604e for Mac OS 8, 9.0/9.1 and Rhapsody.", this);
+            "Rhapsody mode uses RhapsodyEmulator.exe, a G3/IDE profile, and the\n"
+            "selected hard disk and CD images. A G3 ROM is required.", this);
         hint->setStyleSheet("color: #555;");
 
         auto* buttons = new QDialogButtonBox(
@@ -187,6 +193,12 @@ public:
 
         connect(buttons, &QDialogButtonBox::accepted, this, &QDialog::accept);
         connect(buttons, &QDialogButtonBox::rejected, this, &QDialog::reject);
+        connect(rhapsody_, &QCheckBox::toggled, this, [this](bool on) {
+            if (!on)
+                return;
+            model_->setCurrentIndex(model_->findData("pmg3dt"));
+            cpu_->setCurrentIndex(cpu_->findData("750"));
+        });
         connect(romBrowse_, &QPushButton::clicked, this, [this] {
             QString f = QFileDialog::getOpenFileName(this, "Select Boot ROM",
                 rom_->text(), "ROM images (*.rom *.ROM *.bin);;All files (*)");
@@ -225,6 +237,7 @@ public:
         cdBus_->setCurrentIndex(cdBus_->findData(toQ(s.cd_bus)));
         gpu_->setCurrentIndex(gpu_->findData(toQ(s.pci_gpu)));
         net_->setChecked(s.net_enabled);
+        rhapsody_->setChecked(s.rhapsody);
     }
 
     void setName(const QString& n) { name_->setText(n); }
@@ -251,6 +264,7 @@ public:
         s.cd_bus   = toS(cdBus_->currentData().toString());
         s.pci_gpu  = toS(gpu_->currentData().toString());
         s.net_enabled = net_->isChecked();
+        s.rhapsody = rhapsody_->isChecked();
         return s;
     }
 
@@ -273,6 +287,7 @@ private:
     QComboBox* cdBus_;
     QComboBox* gpu_;
     QCheckBox* net_;
+    QCheckBox* rhapsody_;
 };
 
 class MainWindow : public QMainWindow {
@@ -495,7 +510,11 @@ private:
         {
             vm::VmSettings created;
             if (vm::load_vm_settings(toS(dlg.name()), created, err)) {
+                created.hdd_bus = s.hdd_bus;
+                created.cd_bus = s.cd_bus;
+                created.pci_gpu = s.pci_gpu;
                 created.net_enabled = s.net_enabled;
+                created.rhapsody = s.rhapsody;
                 vm::update_vm(toS(dlg.name()), created, err);
             }
         }

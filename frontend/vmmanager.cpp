@@ -186,6 +186,7 @@ bool write_vm_config(const fs::path& folder, const VmSettings& s, std::string& e
 
     cfg << "[Emulation]\n";
     cfg << "realtime=1\n";
+    cfg << "rhapsody=" << (s.rhapsody ? 1 : 0) << "\n";
 
     return true;
 }
@@ -413,6 +414,7 @@ bool load_vm_settings(const std::string& name, VmSettings& out, std::string& err
         out.cd_bus   = read_ini_value(cfg, "storage", "cd_bus");
         out.pci_gpu  = read_ini_value(cfg, "video", "pci_gpu");
         out.net_enabled = read_ini_value(cfg, "network", "enabled") != "0";
+        out.rhapsody = read_ini_value(cfg, "emulation", "rhapsody") == "1";
 
         if (out.machine != "pm8500" && out.machine != "pm9500" &&
             out.machine != "pm8600" && out.machine != "pm9600" &&
@@ -509,10 +511,30 @@ bool launch_vm(const std::string& name, const std::string& emulator_exe,
         g_last = name;
         save_launcher_settings();
 
+        std::string exe_path = emulator_exe;
+        {
+            VmSettings vm_settings;
+            std::string ignored;
+            if (load_vm_settings(name, vm_settings, ignored) &&
+                vm_settings.rhapsody) {
+                fs::path exe = u8p(emulator_exe);
+                fs::path rhapsody = exe.parent_path() / "RhapsodyEmulator";
+#ifdef _WIN32
+                rhapsody += ".exe";
+#endif
+                std::error_code ec;
+                if (!fs::exists(rhapsody, ec)) {
+                    error = "RhapsodyEmulator executable not found next to the VM manager.";
+                    return false;
+                }
+                exe_path = to_u8(rhapsody);
+            }
+        }
+
 #ifdef _WIN32
         // Use CreateProcess with CREATE_NO_WINDOW so the emulator's console
         // window does not appear when started from the VM manager.
-        std::wstring wexe = u8p(emulator_exe).wstring();
+        std::wstring wexe = u8p(exe_path).wstring();
         std::wstring wdir = u8p(e.folder).wstring();
         std::wstring cmdline = L"\"" + wexe + L"\" --run";
         std::vector<wchar_t> cmd(cmdline.begin(), cmdline.end());
@@ -531,7 +553,7 @@ bool launch_vm(const std::string& name, const std::string& emulator_exe,
         CloseHandle(pi.hThread);
         CloseHandle(pi.hProcess);
 #else
-        std::string cmd = "cd \"" + e.folder + "\" && \"" + emulator_exe +
+        std::string cmd = "cd \"" + e.folder + "\" && \"" + exe_path +
                           "\" --run >/dev/null 2>&1 &";
         if (std::system(cmd.c_str()) != 0) {
             error = "Could not start the emulator executable.";

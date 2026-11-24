@@ -50,6 +50,7 @@ struct FrontendConfig {
     bool        swap_cmd_opt = false;
     std::string keyboard     = "Eng_USA";
     bool        realtime     = true;
+    bool        rhapsody     = false;
 };
 
 namespace frontend {
@@ -62,6 +63,7 @@ bool        save_config(const std::string& path);
 void        set_active_config_path(const std::string& path);
 std::string active_config_path();
 void        apply_machine_defaults();
+void        apply_rhapsody_profile();
 
 /** Values for the DingusPPC machine property system, derived from cfg(). */
 std::map<std::string, std::string> build_properties();

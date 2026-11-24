@@ -213,6 +213,68 @@ endif()
 install(TARGETS PowerMacEmulator RUNTIME DESTINATION bin)
 
 # ----------------------------------------------------------------------------
+# Rhapsody-specific executable (G3 + IDE profile)
+# ----------------------------------------------------------------------------
+add_executable(RhapsodyEmulator ${APP_SOURCES}
+    $<TARGET_OBJECTS:core>
+    $<TARGET_OBJECTS:cpu_ppc>
+    $<TARGET_OBJECTS:debugger>
+    $<TARGET_OBJECTS:devices>
+    $<TARGET_OBJECTS:machines>
+    $<TARGET_OBJECTS:utils>
+    $<TARGET_OBJECTS:loguru>
+)
+
+target_compile_definitions(RhapsodyEmulator PRIVATE POWERMAC_RHAPSODY)
+target_link_libraries(RhapsodyEmulator PRIVATE imgui cubeb)
+
+if (WIN32)
+    target_link_libraries(RhapsodyEmulator PRIVATE SDL2::SDL2)
+    target_compile_definitions(RhapsodyEmulator PRIVATE SDL_MAIN_HANDLED)
+elseif (EMSCRIPTEN)
+    target_link_libraries(RhapsodyEmulator PRIVATE ${CMAKE_DL_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+else()
+    target_link_libraries(RhapsodyEmulator PRIVATE SDL2::SDL2main SDL2::SDL2
+        ${CMAKE_DL_LIBS} ${CMAKE_THREAD_LIBS_INIT})
+endif()
+
+if (DPPC_68K_DEBUGGER)
+    target_link_libraries(RhapsodyEmulator PRIVATE capstone)
+endif()
+
+set_target_properties(RhapsodyEmulator PROPERTIES
+    OUTPUT_NAME "RhapsodyEmulator"
+)
+
+if (Qt6_FOUND)
+    target_link_libraries(RhapsodyEmulator PRIVATE Qt6::Widgets)
+    target_compile_definitions(RhapsodyEmulator PRIVATE POWERMAC_QT_UI)
+    if (WIN32)
+        find_program(WINDEPLOYQT_EXE windeployqt)
+        if (WINDEPLOYQT_EXE)
+            add_custom_command(TARGET RhapsodyEmulator POST_BUILD
+                COMMAND "${WINDEPLOYQT_EXE}" --no-translations
+                        --dir "$<TARGET_FILE_DIR:RhapsodyEmulator>"
+                        "$<TARGET_FILE:RhapsodyEmulator>"
+                COMMENT "Deploying Qt runtime for RhapsodyEmulator")
+        endif()
+    endif()
+endif()
+
+if (WIN32)
+    add_custom_command(TARGET RhapsodyEmulator POST_BUILD
+        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+            "$<TARGET_FILE:SDL2::SDL2>"
+            "$<TARGET_FILE_DIR:RhapsodyEmulator>"
+        VERBATIM)
+endif()
+
+target_compile_definitions(RhapsodyEmulator PRIVATE
+    POWERMAC_PROJECT_DIR="${CMAKE_SOURCE_DIR}")
+
+install(TARGETS RhapsodyEmulator RUNTIME DESTINATION bin)
+
+# ----------------------------------------------------------------------------
 # Standalone virtual machine manager
 # ----------------------------------------------------------------------------
 if (Qt6_FOUND)

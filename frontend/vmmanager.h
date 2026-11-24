@@ -38,6 +38,7 @@ struct VmSettings {
     std::string cd_bus  = "curio";     // curio | mesh
     std::string pci_gpu = "none";
     bool        net_enabled = true;
+    bool        rhapsody = false;
 };
 
 /** Reads emulator.ini (VM root directory, last used VM). */
