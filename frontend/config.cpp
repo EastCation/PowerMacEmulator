@@ -159,6 +159,7 @@ bool load_config(const std::string& path)
             else if (key == "cd_bus")   c.cd_bus   = trim(val);
             else if (key == "boot_cd")  c.boot_cd  = parse_bool(val, c.boot_cd);
             else if (key == "ide_hdd")  c.ide_hdd  = val;
+            else if (key == "ide_hdd2") c.ide_hdd2 = val;
             else if (key == "ide_cd")   c.ide_cd   = val;
         } else if (section == "video") {
             if      (key == "pci_gpu")    c.pci_gpu = val;
@@ -207,6 +208,7 @@ bool save_config(const std::string& path)
     out << "cd_bus=" << g_cfg.cd_bus << "\n";
     out << "boot_cd=" << (g_cfg.boot_cd ? 1 : 0) << "\n";
     out << "ide_hdd=" << g_cfg.ide_hdd << "\n";
+    out << "ide_hdd2=" << g_cfg.ide_hdd2 << "\n";
     out << "ide_cd=" << g_cfg.ide_cd << "\n\n";
 
     out << "[Network]\n";
@@ -331,6 +333,10 @@ std::map<std::string, std::string> build_properties()
     const bool g3_ide = (g_cfg.machine == "pmg3dt" || g_cfg.machine == "pmg3twr");
     p["hdd_config"] = g3_ide ? "Ide0:0" : "CmdAta0:0";
     p["ide_hdd_img"] = g_cfg.ide_hdd;
+    if (g3_ide) {
+        p["hdd_config2"] = "Ide0:1";
+        p["ide_hdd_img2"] = g_cfg.ide_hdd2;
+    }
     if (!g_cfg.ide_cd.empty()) {
         p["cdr_config"] = g3_ide ? "Ide1:0" : "CmdAta0:1";
         p["cdr_img"] = g_cfg.ide_cd;

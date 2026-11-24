@@ -103,15 +103,18 @@ public:
         cd_  = new QLineEdit(this);
         cd2_ = new QLineEdit(this);
         hdd_ = new QLineEdit(this);
+        hdd2_ = new QLineEdit(this);
 
         romBrowse_  = new QPushButton("...", this);
         cdBrowse_   = new QPushButton("...", this);
         cd2Browse_  = new QPushButton("...", this);
         hddBrowse_  = new QPushButton("...", this);
+        hdd2Browse_ = new QPushButton("...", this);
         romBrowse_->setFixedWidth(32);
         cdBrowse_->setFixedWidth(32);
         cd2Browse_->setFixedWidth(32);
         hddBrowse_->setFixedWidth(32);
+        hdd2Browse_->setFixedWidth(32);
 
         auto* romRow = new QWidget(this);
         auto* romLay = new QHBoxLayout(romRow);
@@ -136,6 +139,12 @@ public:
         hddLay->setContentsMargins(0, 0, 0, 0);
         hddLay->addWidget(hdd_);
         hddLay->addWidget(hddBrowse_);
+
+        auto* hdd2Row = new QWidget(this);
+        auto* hdd2Lay = new QHBoxLayout(hdd2Row);
+        hdd2Lay->setContentsMargins(0, 0, 0, 0);
+        hdd2Lay->addWidget(hdd2_);
+        hdd2Lay->addWidget(hdd2Browse_);
 
         hddBus_ = new QComboBox(this);
         hddBus_->addItem("External SCSI (Curio)", "curio");
@@ -170,6 +179,7 @@ public:
         if (edit_) {
             form->addRow("Hard disk image(s)", hddRow);
             form->addRow("Hard disk bus", hddBus_);
+            form->addRow("Second IDE disk (BootX)", hdd2Row);
         }
         form->addRow("CD-ROM bus", cdBus_);
         form->addRow("PCI video (9500, slot D2)", gpu_);
@@ -221,6 +231,11 @@ public:
                 hdd_->text(), "Disk images (*.vhd *.img *.raw *.hdd);;All files (*)");
             if (!f.isEmpty()) hdd_->setText(f);
         });
+        connect(hdd2Browse_, &QPushButton::clicked, this, [this] {
+            QString f = QFileDialog::getOpenFileName(this, "Select Second IDE Disk",
+                hdd2_->text(), "Disk images (*.dmg *.img *.raw *.vhd);;All files (*)");
+            if (!f.isEmpty()) hdd2_->setText(f);
+        });
     }
 
     void setSettings(const vm::VmSettings& s)
@@ -233,6 +248,7 @@ public:
         cd_->setText(cds.value(0).trimmed());
         cd2_->setText(cds.value(1).trimmed());
         hdd_->setText(toQ(s.scsi_hdd));
+        hdd2_->setText(toQ(s.ide_hdd2));
         hddBus_->setCurrentIndex(hddBus_->findData(toQ(s.hdd_bus)));
         cdBus_->setCurrentIndex(cdBus_->findData(toQ(s.cd_bus)));
         gpu_->setCurrentIndex(gpu_->findData(toQ(s.pci_gpu)));
@@ -260,6 +276,7 @@ public:
             s.scsi_cd += toS(cd2);
         }
         s.scsi_hdd = toS(hdd_->text().trimmed());
+        s.ide_hdd2 = toS(hdd2_->text().trimmed());
         s.hdd_bus  = toS(hddBus_->currentData().toString());
         s.cd_bus   = toS(cdBus_->currentData().toString());
         s.pci_gpu  = toS(gpu_->currentData().toString());
@@ -279,10 +296,12 @@ private:
     QLineEdit* cd_;
     QLineEdit* cd2_;
     QLineEdit* hdd_;
+    QLineEdit* hdd2_;
     QPushButton* romBrowse_;
     QPushButton* cdBrowse_;
     QPushButton* cd2Browse_;
     QPushButton* hddBrowse_;
+    QPushButton* hdd2Browse_;
     QComboBox* hddBus_;
     QComboBox* cdBus_;
     QComboBox* gpu_;
@@ -513,6 +532,7 @@ private:
                 created.hdd_bus = s.hdd_bus;
                 created.cd_bus = s.cd_bus;
                 created.pci_gpu = s.pci_gpu;
+                created.ide_hdd2 = s.ide_hdd2;
                 created.net_enabled = s.net_enabled;
                 created.rhapsody = s.rhapsody;
                 vm::update_vm(toS(dlg.name()), created, err);

@@ -169,6 +169,7 @@ bool write_vm_config(const fs::path& folder, const VmSettings& s, std::string& e
     cfg << "hdd_bus=" << s.hdd_bus << "\n";
     cfg << "cd_bus=" << s.cd_bus << "\n";
     cfg << "ide_hdd=\n";
+    cfg << "ide_hdd2=" << s.ide_hdd2 << "\n";
     cfg << "ide_cd=\n\n";
 
     cfg << "[Network]\n";
@@ -410,6 +411,7 @@ bool load_vm_settings(const std::string& name, VmSettings& out, std::string& err
         out.ram_mb   = parse_int_or(read_ini_value(cfg, "machine", "ram_mb"), 128);
         out.scsi_hdd = read_ini_value(cfg, "storage", "scsi_hdd");
         out.scsi_cd  = read_ini_value(cfg, "storage", "scsi_cd");
+        out.ide_hdd2 = read_ini_value(cfg, "storage", "ide_hdd2");
         out.hdd_bus  = read_ini_value(cfg, "storage", "hdd_bus");
         out.cd_bus   = read_ini_value(cfg, "storage", "cd_bus");
         out.pci_gpu  = read_ini_value(cfg, "video", "pci_gpu");

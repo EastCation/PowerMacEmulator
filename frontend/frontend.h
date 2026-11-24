@@ -34,8 +34,9 @@ struct FrontendConfig {
     std::string              cd_bus  = "curio"; // curio (external SCSI) | mesh
     bool                     boot_cd = false;   // hold C while starting up
 
-    // Optional PCI IDE (CMD646)
+    // Optional IDE devices (G3 built-in or PCI CMD646)
     std::string ide_hdd;
+    std::string ide_hdd2;
     std::string ide_cd;
 
     // PCI graphics adapter used by the 9500 (no on-board video)

@@ -35,17 +35,20 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 using namespace ata_interface;
 
-AtaHardDisk::AtaHardDisk(std::string name) : AtaBaseDevice(name, DEVICE_TYPE_ATA) {
+AtaHardDisk::AtaHardDisk(std::string name, std::string config_prop,
+                         std::string image_prop) : AtaBaseDevice(name, DEVICE_TYPE_ATA),
+    config_prop(config_prop), image_prop(image_prop) {
 }
 
 int AtaHardDisk::device_postinit() {
-    std::string hdd_config = GET_STR_PROP("hdd_config");
+    std::string hdd_config = GET_STR_PROP(this->config_prop);
     if (hdd_config.empty()) {
-        LOG_F(ERROR, "%s: hdd_config property is empty", this->name.c_str());
+        LOG_F(ERROR, "%s: %s property is empty", this->name.c_str(),
+              this->config_prop.c_str());
         return -1;
     }
 
-    std::string hdd_image_path = GET_STR_PROP("ide_hdd_img");
+    std::string hdd_image_path = GET_STR_PROP(this->image_prop);
     if (hdd_image_path.empty())
         return 0;
 
@@ -393,4 +396,13 @@ static const DeviceDescription AtaHardDisk_Descriptor = {
     AtaHardDisk::create, {}, AtaHardDisk_Properties, HWCompType::IDE_DEV
 };
 
+static const PropMap AtaHardDisk2_Properties = {
+    {"ide_hdd_img2", new StrProperty("")},
+};
+
+static const DeviceDescription AtaHardDisk2_Descriptor = {
+    AtaHardDisk::create_secondary, {}, AtaHardDisk2_Properties, HWCompType::IDE_DEV
+};
+
 REGISTER_DEVICE(AtaHardDisk, AtaHardDisk_Descriptor);
+REGISTER_DEVICE(AtaHardDisk2, AtaHardDisk2_Descriptor);

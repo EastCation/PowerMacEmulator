@@ -37,6 +37,7 @@ struct VmSettings {
     std::string hdd_bus = "curio";     // curio | mesh
     std::string cd_bus  = "curio";     // curio | mesh
     std::string pci_gpu = "none";
+    std::string ide_hdd2;              // second IDE disk, e.g. BootX image
     bool        net_enabled = true;
     bool        rhapsody = false;
 };

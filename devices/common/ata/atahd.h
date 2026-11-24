@@ -43,11 +43,17 @@ constexpr auto CHS_LIMIT = 267386880;
 class AtaHardDisk : public AtaBaseDevice
 {
 public:
-    AtaHardDisk(std::string name);
+    AtaHardDisk(std::string name, std::string config_prop = "hdd_config",
+                std::string image_prop = "ide_hdd_img");
     ~AtaHardDisk() = default;
 
     static std::unique_ptr<HWComponent> create() {
         return std::unique_ptr<AtaHardDisk>(new AtaHardDisk("ATA-HD"));
+    }
+
+    static std::unique_ptr<HWComponent> create_secondary() {
+        return std::unique_ptr<AtaHardDisk>(new AtaHardDisk("ATA-HD2",
+            "hdd_config2", "ide_hdd_img2"));
     }
 
     int device_postinit() override;
@@ -73,6 +79,9 @@ private:
 
     uint8_t     sectors_per_int  = 0; // sectors per interrupt for READ_MULTIPLE/WRITE_MULTIPLE
     uint8_t     cur_dma_mode     = 2; // current multi-word DMA mode
+
+    std::string config_prop;
+    std::string image_prop;
 
     char * buffer = new char[1 <<17];
     

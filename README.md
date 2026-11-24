@@ -33,6 +33,7 @@ PowerMac Emulator 是一个面向 Power Macintosh / PowerPC Mac 的实验性模�
   - 动态 VHD 硬盘镜像
   - CD-ROM 镜像：ISO、BIN/CUE、CCD/IMG、MDS/MDF
   - 第二 CD-ROM 光驱
+  - G3 第二 IDE 硬盘（可用于 BootX 磁盘）
 - **声音**：
   - AWACS / Screamer 系统声音
   - CD-DA 音乐 CD 播放（独立 cubeb 音频流）
