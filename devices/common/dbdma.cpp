@@ -285,9 +285,10 @@ void DMAChannel::xfer_quad(bool is_store) {
             WRITE_DWORD_LE_A(&this->cur_host->cmd_arg, value);
     }
 
-    if (this->cur_host->cmd_bits & 0xC)
-        ABORT_F("%s: cmd_bits.b should be zero for LOAD/STORE_QUAD!",
+    if (this->cur_host->cmd_bits & 0xC) {
+        LOG_F(WARNING, "%s: cmd_bits.b is set for LOAD/STORE_QUAD",
             this->get_name().c_str());
+    }
 
     this->finish_cmd();
 }
