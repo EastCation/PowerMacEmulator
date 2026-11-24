@@ -244,6 +244,10 @@ int AtaHardDisk::perform_command() {
                 LOG_F(INFO, "%s: PIO transfer mode set to 0x%X", this->name.c_str(),
                       this->r_sect_count & 7);
                 break;
+            case 2:
+                LOG_F(INFO, "%s: PIO transfer mode set to 0x%X", this->name.c_str(),
+                      this->r_sect_count & 7);
+                break;
             case 4:
                 this->cur_dma_mode = this->r_sect_count & 7;
                 LOG_F(INFO, "%s: Multiword DMA mode set to 0x%X", this->name.c_str(),

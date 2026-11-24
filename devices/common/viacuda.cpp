@@ -610,7 +610,7 @@ void ViaCuda::autopoll_handler() {
     // means an active byte transfer is in progress in either direction.
     // The real Cuda is single-threaded and would never enter its idle
     // loop during a transaction.
-    if (!this->old_tip) {
+    if (!this->old_tip || !this->treq) {
         return;
     }
 
