@@ -176,6 +176,7 @@ bool load_config(const std::string& path)
             if (key == "realtime") c.realtime = parse_bool(val, c.realtime);
             else if (key == "rhapsody") c.rhapsody = parse_bool(val, c.rhapsody);
             else if (key == "rhapsody_dr1") c.rhapsody_dr1 = parse_bool(val, c.rhapsody_dr1);
+            else if (key == "sound") c.sound_enabled = parse_bool(val, c.sound_enabled);
         }
     }
 
@@ -230,6 +231,7 @@ bool save_config(const std::string& path)
     out << "realtime=" << (g_cfg.realtime ? 1 : 0) << "\n";
     out << "rhapsody=" << (g_cfg.rhapsody ? 1 : 0) << "\n";
     out << "rhapsody_dr1=" << (g_cfg.rhapsody_dr1 ? 1 : 0) << "\n";
+    out << "sound=" << (g_cfg.sound_enabled ? 1 : 0) << "\n";
 
     g_active_config = path;
     return true;
@@ -362,6 +364,7 @@ std::map<std::string, std::string> build_properties()
 
     // Network card can be unplugged from the VM settings.
     p["net_enabled"] = g_cfg.net_enabled ? "1" : "0";
+    p["screamer"] = g_cfg.sound_enabled ? "1" : "0";
 
     // The 9500 has no on-board video; plug a PCI graphics card into slot D2.
     p["mon_id"] = g_cfg.mon_id;

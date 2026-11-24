@@ -62,21 +62,31 @@ GrandCentral::GrandCentral() : PCIDevice("mac-io_grandcentral"), InterruptCtrl()
     this->viacuda = dynamic_cast<ViaCuda*>(gMachineObj->get_comp_by_name("ViaCuda"));
 
     // initialize sound chip and its DMA output channel, then wire them together
-    this->awacs       = std::unique_ptr<AwacsScreamer> (new AwacsScreamer());
-    this->snd_out_dma = std::unique_ptr<DMAChannel> (new DMAChannel("snd_out"));
-    this->snd_out_dma->register_dma_int(this, this->register_dma_int(IntSrc::DMA_DAVBUS_Tx));
-    this->awacs->set_dma_out(this->snd_out_dma.get());
-    this->snd_out_dma->set_callbacks(
-        std::bind(&AwacsScreamer::dma_out_start, this->awacs.get()),
-        std::bind(&AwacsScreamer::dma_out_stop, this->awacs.get())
-    );
-    this->snd_in_dma = std::unique_ptr<DMAChannel> (new DMAChannel("snd_in"));
-    this->snd_in_dma->register_dma_int(this, this->register_dma_int(IntSrc::DMA_DAVBUS_Rx));
-    this->awacs->set_dma_in(this->snd_in_dma.get());
-    this->snd_in_dma->set_callbacks(
-        std::bind(&AwacsScreamer::dma_in_start, this->awacs.get()),
-        std::bind(&AwacsScreamer::dma_in_stop, this->awacs.get())
-    );
+    bool sound_enabled = true;
+    auto sound_it = gMachineSettings.find("screamer");
+    if (sound_it != gMachineSettings.end()) {
+        auto* prop = dynamic_cast<BinProperty*>(sound_it->second.get());
+        if (prop)
+            sound_enabled = prop->get_val();
+    }
+
+    if (sound_enabled) {
+        this->awacs       = std::unique_ptr<AwacsScreamer> (new AwacsScreamer());
+        this->snd_out_dma = std::unique_ptr<DMAChannel> (new DMAChannel("snd_out"));
+        this->snd_out_dma->register_dma_int(this, this->register_dma_int(IntSrc::DMA_DAVBUS_Tx));
+        this->awacs->set_dma_out(this->snd_out_dma.get());
+        this->snd_out_dma->set_callbacks(
+            std::bind(&AwacsScreamer::dma_out_start, this->awacs.get()),
+            std::bind(&AwacsScreamer::dma_out_stop, this->awacs.get())
+        );
+        this->snd_in_dma = std::unique_ptr<DMAChannel> (new DMAChannel("snd_in"));
+        this->snd_in_dma->register_dma_int(this, this->register_dma_int(IntSrc::DMA_DAVBUS_Rx));
+        this->awacs->set_dma_in(this->snd_in_dma.get());
+        this->snd_in_dma->set_callbacks(
+            std::bind(&AwacsScreamer::dma_in_start, this->awacs.get()),
+            std::bind(&AwacsScreamer::dma_in_stop, this->awacs.get())
+        );
+    }
 
     // connect serial HW
     this->escc = dynamic_cast<EsccController*>(gMachineObj->get_comp_by_name("Escc"));
@@ -219,7 +229,7 @@ uint32_t GrandCentral::read(uint32_t rgn_start, uint32_t offset, int size)
         case 3: // ESCC MacRISC addressing
             return this->escc->read((offset >> 4) & 0xF);
         case 4: // AWACS
-            return this->awacs->snd_ctrl_read(offset & 0xFF, size);
+            return this->awacs ? this->awacs->snd_ctrl_read(offset & 0xFF, size) : 0;
         case 5: // SWIM3
             return this->swim3->read((offset >> 4) & 0xF);
         case 6:
@@ -290,7 +300,7 @@ uint32_t GrandCentral::read(uint32_t rgn_start, uint32_t offset, int size)
         case MIO_GC_DMA_ESCC_B_RCV:
             return this->escc_b_rx_dma->reg_read(offset & 0xFF, size);*/
         case MIO_GC_DMA_AUDIO_OUT:
-            return this->snd_out_dma->reg_read(offset & 0xFF, size);
+            return this->snd_out_dma ? this->snd_out_dma->reg_read(offset & 0xFF, size) : 0;
         case MIO_GC_DMA_AUDIO_IN:
             #if 0
                 LOG_F(WARNING, "%s: Unsupported DMA channel DMA_AUDIO_IN read  @%02x.%c",
@@ -357,7 +367,8 @@ void GrandCentral::write(uint32_t rgn_start, uint32_t offset, uint32_t value, in
             this->escc->write((offset >> 4) & 0xF, value);
             break;
         case 4: // AWACS
-            this->awacs->snd_ctrl_write(offset & 0xFF, value, size);
+            if (this->awacs)
+                this->awacs->snd_ctrl_write(offset & 0xFF, value, size);
             break;
         case 5:
             this->swim3->write((offset >> 4) & 0xF, value);
@@ -427,7 +438,8 @@ void GrandCentral::write(uint32_t rgn_start, uint32_t offset, uint32_t value, in
             //this->escc_b_rx_dma->reg_write(offset & 0xFF, value, size);
             break;
         case MIO_GC_DMA_AUDIO_OUT:
-            this->snd_out_dma->reg_write(offset & 0xFF, value, size);
+            if (this->snd_out_dma)
+                this->snd_out_dma->reg_write(offset & 0xFF, value, size);
             break;
         case MIO_GC_DMA_AUDIO_IN:
             LOG_F(WARNING, "%s: Unsupported DMA channel DMA_AUDIO_IN write @%02x.%c = %0*x",

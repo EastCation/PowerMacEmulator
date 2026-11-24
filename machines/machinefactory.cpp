@@ -189,6 +189,15 @@ void MachineFactory::list_machines()
 
 void MachineFactory::create_device(string& dev_name, DeviceDescription& dev)
 {
+    if (dev_name == "ScreamerSnd" || dev_name == "BurgundySnd") {
+        auto it = gMachineSettings.find("screamer");
+        if (it != gMachineSettings.end()) {
+            auto* prop = dynamic_cast<BinProperty*>(it->second.get());
+            if (prop && !prop->get_val())
+                return;
+        }
+    }
+
     for (auto& subdev_name : dev.subdev_list) {
         create_device(subdev_name, DeviceRegistry::get_descriptor(subdev_name));
     }

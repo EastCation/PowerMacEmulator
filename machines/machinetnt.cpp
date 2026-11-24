@@ -211,6 +211,7 @@ static const PropMap pm7500_settings_ ## cpu = { \
     {"cdr_config", new StrProperty("ScsiCurio:3")}, \
     {"hdd_config", new StrProperty("CmdAta0:0")}, \
     {"emmo", new BinProperty(0)}, \
+    {"screamer", new BinProperty(1)}, \
     {"cpu", new StrProperty(# cpu, std::vector<std::string>({"601", "604", "604e", "750"}))}, \
 };
 

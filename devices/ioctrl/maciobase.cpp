@@ -54,21 +54,23 @@ MacIoBase::MacIoBase(std::string name, uint16_t dev_id, uint8_t rev) :
     this->viacuda = dynamic_cast<ViaCuda*>(gMachineObj->get_comp_by_name("ViaCuda"));
 
     // find the sound codec, create its DMA channels, then wire everything together
-    this->snd_codec   = dynamic_cast<MacioSndCodec*>(gMachineObj->get_comp_by_type(HWCompType::SND_CODEC));
-    this->snd_out_dma = std::unique_ptr<DMAChannel> (new DMAChannel("snd_out"));
-    this->snd_out_dma->register_dma_int(this, this->register_dma_int(IntSrc::DMA_DAVBUS_Tx));
-    this->snd_codec->set_dma_out(this->snd_out_dma.get());
-    this->snd_out_dma->set_callbacks(
-        std::bind(&AwacsScreamer::dma_out_start, this->snd_codec),
-        std::bind(&AwacsScreamer::dma_out_stop, this->snd_codec)
-    );
-    this->snd_in_dma = std::unique_ptr<DMAChannel> (new DMAChannel("snd_in"));
-    this->snd_in_dma->register_dma_int(this, this->register_dma_int(IntSrc::DMA_DAVBUS_Rx));
-    this->snd_codec->set_dma_in(this->snd_in_dma.get());
-    this->snd_in_dma->set_callbacks(
-        std::bind(&AwacsScreamer::dma_in_start, this->snd_codec),
-        std::bind(&AwacsScreamer::dma_in_stop, this->snd_codec)
-    );
+    this->snd_codec = dynamic_cast<MacioSndCodec*>(gMachineObj->get_comp_by_type(HWCompType::SND_CODEC));
+    if (this->snd_codec) {
+        this->snd_out_dma = std::unique_ptr<DMAChannel> (new DMAChannel("snd_out"));
+        this->snd_out_dma->register_dma_int(this, this->register_dma_int(IntSrc::DMA_DAVBUS_Tx));
+        this->snd_codec->set_dma_out(this->snd_out_dma.get());
+        this->snd_out_dma->set_callbacks(
+            std::bind(&AwacsScreamer::dma_out_start, this->snd_codec),
+            std::bind(&AwacsScreamer::dma_out_stop, this->snd_codec)
+        );
+        this->snd_in_dma = std::unique_ptr<DMAChannel> (new DMAChannel("snd_in"));
+        this->snd_in_dma->register_dma_int(this, this->register_dma_int(IntSrc::DMA_DAVBUS_Rx));
+        this->snd_codec->set_dma_in(this->snd_in_dma.get());
+        this->snd_in_dma->set_callbacks(
+            std::bind(&AwacsScreamer::dma_in_start, this->snd_codec),
+            std::bind(&AwacsScreamer::dma_in_stop, this->snd_codec)
+        );
+    }
 
     // connect floppy disk controller and initialize its DMA channel
     this->swim3 = dynamic_cast<Swim3::Swim3Ctrl*>(gMachineObj->get_comp_by_name("Swim3"));

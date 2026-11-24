@@ -41,6 +41,7 @@ struct VmSettings {
     bool        net_enabled = true;
     bool        rhapsody = false;
     bool        rhapsody_dr1 = false;
+    bool        sound_enabled = true;
 };
 
 /** Reads emulator.ini (VM root directory, last used VM). */

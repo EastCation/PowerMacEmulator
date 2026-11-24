@@ -53,6 +53,7 @@ struct FrontendConfig {
     bool        realtime     = true;
     bool        rhapsody     = false;
     bool        rhapsody_dr1 = false;
+    bool        sound_enabled = true;
 };
 
 namespace frontend {

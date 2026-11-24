@@ -161,6 +161,8 @@ public:
 
         net_ = new QCheckBox("MACE Ethernet (built-in)", this);
         net_->setChecked(true);
+        sound_ = new QCheckBox("Screamer sound card", this);
+        sound_->setChecked(true);
         rhapsody_ = new QCheckBox("Use RhapsodyEmulator (G3 / IDE profile)", this);
         rhapsody_->setToolTip(
             "Launch RhapsodyEmulator.exe for this VM. The selected hard disk and\n"
@@ -188,6 +190,7 @@ public:
         form->addRow("CD-ROM bus", cdBus_);
         form->addRow("PCI video (9500, slot D2)", gpu_);
         form->addRow("Network card", net_);
+        form->addRow("Sound card", sound_);
         form->addRow("Rhapsody mode", rhapsody_);
         form->addRow("Rhapsody DR1", dr1_);
 
@@ -269,6 +272,7 @@ public:
         cdBus_->setCurrentIndex(cdBus_->findData(toQ(s.cd_bus)));
         gpu_->setCurrentIndex(gpu_->findData(toQ(s.pci_gpu)));
         net_->setChecked(s.net_enabled);
+        sound_->setChecked(s.sound_enabled);
         rhapsody_->setChecked(s.rhapsody);
         dr1_->setChecked(s.rhapsody_dr1);
     }
@@ -298,6 +302,7 @@ public:
         s.cd_bus   = toS(cdBus_->currentData().toString());
         s.pci_gpu  = toS(gpu_->currentData().toString());
         s.net_enabled = net_->isChecked();
+        s.sound_enabled = sound_->isChecked();
         s.rhapsody = rhapsody_->isChecked();
         s.rhapsody_dr1 = dr1_->isChecked();
         return s;
@@ -324,6 +329,7 @@ private:
     QComboBox* cdBus_;
     QComboBox* gpu_;
     QCheckBox* net_;
+    QCheckBox* sound_;
     QCheckBox* rhapsody_;
     QCheckBox* dr1_;
 };
@@ -553,6 +559,7 @@ private:
                 created.pci_gpu = s.pci_gpu;
                 created.ide_hdd2 = s.ide_hdd2;
                 created.net_enabled = s.net_enabled;
+                created.sound_enabled = s.sound_enabled;
                 created.rhapsody = s.rhapsody;
                 created.rhapsody_dr1 = s.rhapsody_dr1;
                 vm::update_vm(toS(dlg.name()), created, err);

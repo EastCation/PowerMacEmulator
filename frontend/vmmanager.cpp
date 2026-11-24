@@ -189,6 +189,7 @@ bool write_vm_config(const fs::path& folder, const VmSettings& s, std::string& e
     cfg << "realtime=1\n";
     cfg << "rhapsody=" << (s.rhapsody ? 1 : 0) << "\n";
     cfg << "rhapsody_dr1=" << (s.rhapsody_dr1 ? 1 : 0) << "\n";
+    cfg << "sound=" << (s.sound_enabled ? 1 : 0) << "\n";
 
     return true;
 }
@@ -419,6 +420,7 @@ bool load_vm_settings(const std::string& name, VmSettings& out, std::string& err
         out.net_enabled = read_ini_value(cfg, "network", "enabled") != "0";
         out.rhapsody = read_ini_value(cfg, "emulation", "rhapsody") == "1";
         out.rhapsody_dr1 = read_ini_value(cfg, "emulation", "rhapsody_dr1") == "1";
+        out.sound_enabled = read_ini_value(cfg, "emulation", "sound") != "0";
 
         if (out.machine != "pm8500" && out.machine != "pm9500" &&
             out.machine != "pm8600" && out.machine != "pm9600" &&
