@@ -19,6 +19,9 @@ jobs:
       - name: Check out source
         uses: actions/checkout@v4
 
+      - name: Install Rust
+        uses: dtolnay/rust-toolchain@stable
+
       - name: Install Qt
         uses: jurplel/install-qt-action@v4
         with:
@@ -30,6 +33,9 @@ jobs:
         uses: ilammy/msvc-dev-cmd@v1
         with:
           arch: x64
+
+      - name: Test Rust Slirp
+        run: cargo test --manifest-path rust/slirp/Cargo.toml
 
       - name: Configure
         shell: pwsh
@@ -56,7 +62,7 @@ jobs:
 
           New-Item -ItemType Directory -Path dist -Force | Out-Null
           Copy-Item -Path "build/bin/*" -Destination dist -Recurse -Force
-          Copy-Item -Path @("README.md", "LICENSE") -Destination dist -Force
+          Copy-Item -Path @("README.md", "README.en.md", "LICENSE") -Destination dist -Force
           Compress-Archive -Path "dist/*" `
             -DestinationPath "PowerMacEmulator-Windows-x64.zip" -Force
 

@@ -19,44 +19,42 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # ----------------------------------------------------------------------------
-# Optional libslirp user-mode networking (Windows prebuilt runtime)
+# Rust userspace networking (pktkit-based Slirp)
 # ----------------------------------------------------------------------------
-set(LIBSLIRP_DIR "E:/qemu" CACHE PATH "Directory containing libslirp-0.dll and its DLL dependencies")
-set(LIBSLIRP_AVAILABLE FALSE)
-if (WIN32)
-    set(LIBSLIRP_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/thirdparty/libslirp/include")
-    set(LIBSLIRP_IMPORT_LIB "${CMAKE_SOURCE_DIR}/thirdparty/libslirp/libslirp.lib")
-    if (EXISTS "${LIBSLIRP_IMPORT_LIB}" AND EXISTS "${LIBSLIRP_DIR}/libslirp-0.dll")
-        set(LIBSLIRP_AVAILABLE TRUE)
-        add_library(libslirp INTERFACE)
-        target_include_directories(libslirp INTERFACE "${LIBSLIRP_INCLUDE_DIR}")
-        target_link_libraries(libslirp INTERFACE "${LIBSLIRP_IMPORT_LIB}")
-        set(LIBSLIRP_RUNTIME_DLLS
-            "${LIBSLIRP_DIR}/libslirp-0.dll"
-            "${LIBSLIRP_DIR}/libglib-2.0-0.dll"
-            "${LIBSLIRP_DIR}/libintl-8.dll"
-            "${LIBSLIRP_DIR}/libiconv-2.dll"
-            "${LIBSLIRP_DIR}/libpcre2-8-0.dll"
-            "${LIBSLIRP_DIR}/libffi-8.dll"
-            "${LIBSLIRP_DIR}/zlib1.dll")
-        message(STATUS "libslirp: using ${LIBSLIRP_DIR}")
-    else()
-        message(STATUS "libslirp: not found, user-mode networking disabled")
-    endif()
+find_program(CARGO_EXECUTABLE cargo)
+if (NOT CARGO_EXECUTABLE)
+    message(FATAL_ERROR "cargo was not found; install Rust to build the userspace network backend")
 endif()
+
+set(RUST_SLIRP_MANIFEST "${CMAKE_SOURCE_DIR}/rust/slirp/Cargo.toml")
+set(RUST_SLIRP_TARGET_DIR "${CMAKE_BINARY_DIR}/rust")
+if (WIN32)
+    set(RUST_SLIRP_LIBRARY "${RUST_SLIRP_TARGET_DIR}/release/slirp_native.lib")
+else()
+    set(RUST_SLIRP_LIBRARY "${RUST_SLIRP_TARGET_DIR}/release/libslirp_native.a")
+endif()
+
+add_custom_command(
+    OUTPUT "${RUST_SLIRP_LIBRARY}"
+    COMMAND "${CARGO_EXECUTABLE}" build --release
+            --manifest-path "${RUST_SLIRP_MANIFEST}"
+            --target-dir "${RUST_SLIRP_TARGET_DIR}"
+    DEPENDS
+        "${RUST_SLIRP_MANIFEST}"
+        "${CMAKE_SOURCE_DIR}/rust/slirp/src/lib.rs"
+        "${CMAKE_SOURCE_DIR}/rust/slirp/Cargo.lock"
+    WORKING_DIRECTORY "${CMAKE_SOURCE_DIR}/rust/slirp"
+    COMMENT "Building Rust Slirp network backend"
+    VERBATIM)
+add_custom_target(slirp_native_build DEPENDS "${RUST_SLIRP_LIBRARY}")
+
 function(powermac_link_slirp target_name)
-    if (LIBSLIRP_AVAILABLE)
-        target_link_libraries(${target_name} PRIVATE libslirp ws2_32)
-        if (WIN32)
-            foreach (slirp_dll IN LISTS LIBSLIRP_RUNTIME_DLLS)
-                if (EXISTS "${slirp_dll}")
-                    add_custom_command(TARGET ${target_name} POST_BUILD
-                        COMMAND ${CMAKE_COMMAND} -E copy_if_different
-                            "${slirp_dll}" "$<TARGET_FILE_DIR:${target_name}>"
-                        VERBATIM)
-                endif()
-            endforeach()
-        endif()
+    add_dependencies(${target_name} slirp_native_build)
+    target_link_libraries(${target_name} PRIVATE "${RUST_SLIRP_LIBRARY}")
+    if (WIN32)
+        target_link_libraries(${target_name} PRIVATE ws2_32 iphlpapi ntdll)
+    elseif (UNIX)
+        target_link_libraries(${target_name} PRIVATE Threads::Threads ${CMAKE_DL_LIBS})
     endif()
 endfunction()
 # ----------------------------------------------------------------------------

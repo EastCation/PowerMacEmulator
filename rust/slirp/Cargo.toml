@@ -1,0 +1,17 @@
+[package]
+name = "slirp_native"
+version = "0.1.0"
+edition = "2021"
+license = "GPL-3.0-or-later"
+
+[lib]
+crate-type = ["staticlib"]
+name = "slirp_native"
+
+[dependencies]
+pktkit = { version = "0.1.12", features = ["slirp", "dhcp", "l2adapter"] }
+
+[profile.release]
+opt-level = 3
+lto = "thin"
+codegen-units = 1

@@ -1,3 +1,5 @@
+简体中文 | [English](README.en.md)
+
 # PowerMac Emulator
 
 PowerMac Emulator 是一个面向 Power Macintosh / PowerPC Mac 的实验性模拟器前端，
@@ -34,6 +36,11 @@ PowerMac Emulator 是一个面向 Power Macintosh / PowerPC Mac 的实验性模�
   - CD-ROM 镜像：ISO、BIN/CUE、CCD/IMG、MDS/MDF
   - 第二 CD-ROM 光驱
   - G3 第二 IDE 硬盘（可用于 BootX 磁盘）
+  - 软盘镜像和运行时热插拔
+- **网络**：
+  - MACE 以太网控制器
+  - 内置 Rust 用户态 Slirp（10.0.2.0/24、DHCP、DNS、TCP/UDP NAT）
+  - 静态链接，无需额外的 libslirp/glib DLL
 - **声音**：
   - AWACS / Screamer 系统声音
   - CD-DA 音乐 CD 播放（独立 cubeb 音频流）
@@ -80,8 +87,8 @@ Rhapsody 专用模式需要 G3 ROM。
 - **G3 MESH/SCSI 不可用**
   - 会出现 `ScsiMesh` 重复设备或 DBDMA `LOAD_QUAD` 错误。
   - G3 请使用 IDE/ATAPI 路径；`RhapsodyEmulator.exe` 已自动映射到 IDE。
-- **网络尚未实现**
-  - MACE 控制器有基础代码，但尚未接入 Slirp 或其他用户态网络后端。
+- **网络仍在调试**
+  - MACE 和 Rust Slirp 后端已接入，但 Mac OS 9 下的 DHCP、浏览和互联网访问尚未完全验证。
 - **音频输入/麦克风未实现**
 - **串口、ADB 设备热插拔、部分 Open Firmware 功能仍不完整**
 - **Release 目前只提供 Windows x64**
@@ -95,6 +102,7 @@ Rhapsody 专用模式需要 G3 ROM。
 
 - Visual Studio 2022/2026，含“使用 C++ 的桌面开发”
 - CMake 3.16+
+- Rust stable（`cargo` 在 `PATH` 中，用于编译 `rust/slirp`）
 - Qt 6（Widgets）
 - 仓库自带的 SDL2（`thirdparty/SDL2`）和 cubeb（`thirdparty/cubeb`）
 

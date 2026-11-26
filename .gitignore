@@ -30,6 +30,10 @@ compile_commands.json
 *.session
 *.tags
 
+# Rust build output
+rust/slirp/target/
+target/
+
 # Ignore generated executables
 dingusppc
 dingusppc.exe
