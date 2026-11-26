@@ -72,6 +72,7 @@ public:
 
 protected:
     void fill_cache(const int nblocks);
+    int activity_kind = 0;
 
     ImgFile     img_file;
     uint64_t    size_bytes    = 0;   // image file size in bytes

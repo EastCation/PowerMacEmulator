@@ -41,6 +41,11 @@ platform_glob(SOURCES "${CMAKE_CURRENT_SOURCE_DIR}/*.cpp"
     )
 
 add_library(devices OBJECT ${SOURCES})
+
+target_include_directories(devices PRIVATE "${PROJECT_SOURCE_DIR}/thirdparty/libslirp/include")
+if (LIBSLIRP_AVAILABLE)
+    target_compile_definitions(devices PRIVATE POWERMAC_HAVE_SLIRP)
+endif()
 if (EMSCRIPTEN)
     target_link_libraries(devices PRIVATE)
 else()

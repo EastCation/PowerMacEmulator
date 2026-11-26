@@ -167,9 +167,9 @@ public:
         rhapsody_->setToolTip(
             "Launch RhapsodyEmulator.exe for this VM. The selected hard disk and\n"
             "CD images are attached to the G3 IDE controller.");
-        dr1_ = new QCheckBox("Rhapsody DR1 compatibility (PM9600 / SCSI)", this);
+        dr1_ = new QCheckBox("Rhapsody DR1 compatibility (PM8500 / SCSI)", this);
         dr1_->setToolTip(
-            "Launch RhapsodyEmulator.exe with the old-world PM9600/Curio SCSI\n"
+            "Launch RhapsodyEmulator.exe with the old-world PM8500/Curio SCSI\n"
             "profile. Rhapsody DR1 does not support G3/IDE.");
 
         auto* form = new QFormLayout();
@@ -222,8 +222,8 @@ public:
             if (!on)
                 return;
             rhapsody_->setChecked(false);
-            model_->setCurrentIndex(model_->findData("pm9600"));
-            cpu_->setCurrentIndex(cpu_->findData("604e"));
+            model_->setCurrentIndex(model_->findData("pm8500"));
+            cpu_->setCurrentIndex(cpu_->findData("604"));
             ram_->setCurrentIndex(ramIndex(512));
             hddBus_->setCurrentIndex(hddBus_->findData("curio"));
             cdBus_->setCurrentIndex(cdBus_->findData("curio"));

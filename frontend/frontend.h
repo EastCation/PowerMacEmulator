@@ -39,6 +39,11 @@ struct FrontendConfig {
     std::string ide_hdd2;
     std::string ide_cd;
 
+    // Floppy disk image (virtual internal Superdrive)
+    std::string fdd_img;
+    bool        fdd_wr_prot = false;
+    std::string fdd_fmt;
+
     // PCI graphics adapter used by the 9500 (no on-board video)
     std::string pci_gpu = "none";
     std::string mon_id = "VGA-SVGA"; // "" = DDC/EDID; or Multiscan20in, AppleVision1710

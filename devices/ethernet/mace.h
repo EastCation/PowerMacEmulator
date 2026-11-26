@@ -26,9 +26,14 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <devices/common/dmacore.h>
 #include <devices/common/hwcomponent.h>
+#include <devices/common/hwinterrupt.h>
+#include <core/timermanager.h>
+#include <devices/ethernet/slirp_backend.h>
 
 #include <cinttypes>
+#include <deque>
 #include <memory>
+#include <vector>
 
 /** Known MACE chip IDs. */
 constexpr auto MACE_ID_REV_B0 = 0x0940;    // Darwin-0.3 source
@@ -100,6 +105,10 @@ public:
     uint8_t read(uint8_t reg_offset);
     void    write(uint8_t reg_offset, uint8_t value);
 
+    int  xfer_to(DmaChannel* ch_obj, uint8_t* buf, int len) override;
+    int  xfer_from(DmaChannel* ch_obj, uint8_t* buf, int len) override;
+    void notify(DmaChannel* ch_obj, DmaMsg msg) override;
+
 private:
     uint16_t    chip_id;          // per-instance MACE Chip ID
     bool        enabled = true;   // false = NIC unplugged in VM settings
@@ -123,9 +132,26 @@ private:
     uint64_t    phys_addr     = 0;
     uint64_t    log_addr      = 0;
 
+    // Ethernet packet path
+    void ensure_network();
+    void raise_interrupt();
+    void send_tx_frame();
+    void receive_frame(const uint8_t* frame, int len);
+    void try_receive();
+
+    std::unique_ptr<SlirpBackend> net_backend;
+    bool net_started = false;
+    std::vector<uint8_t> tx_frame;
+    std::deque<std::vector<uint8_t>> rx_queue;
+    std::deque<uint8_t> rx_fifo;
+
     // interrupt stuff
     uint8_t     int_stat  = 0;
     uint8_t     int_mask  = 0;
+    uint8_t     user_test = 0;
+    TimerInfo   loopback_timer;
+    InterruptCtrl* int_ctrl = nullptr;
+    uint64_t       irq_id = 0;
 };
 
 #endif // MACE_H

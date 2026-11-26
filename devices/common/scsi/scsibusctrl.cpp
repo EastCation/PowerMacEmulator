@@ -238,27 +238,47 @@ int ScsiBusController::xfer_from(DmaChannel *ch_obj, uint8_t *buf, int len) {
     if (len > this->to_xfer + this->fifo_pos)
         LOG_F(WARNING, "%s: DMA xfer len > command xfer len", this->name.c_str());
 
+    int total = 0;
+
     if (this->fifo_pos) {
         int fifo_bytes = std::min(this->fifo_pos, len);
         std::memcpy(buf, this->data_fifo, fifo_bytes);
         this->fifo_pos -= fifo_bytes;
         len -= fifo_bytes;
         buf += fifo_bytes;
+        total += fifo_bytes;
     }
 
     int dma_bytes = std::min(this->to_xfer, len);
 
-    if (this->bus_obj->pull_data(this->dst_id, buf, dma_bytes)) {
+    if (dma_bytes && this->bus_obj->pull_data(this->dst_id, buf, dma_bytes)) {
         this->to_xfer -= dma_bytes;
+        total += dma_bytes;
         if (this->to_xfer <= 0) {
             this->xfer_count = this->to_xfer;
             this->cur_state = SeqState::XFER_END;
             this->sequencer();
         }
-        return 0;
     }
 
-    return len;
+    return total;
+}
+
+int ScsiBusController::xfer_to(DmaChannel *ch_obj, uint8_t *buf, int len) {
+    int bytes = std::min(this->to_xfer, len);
+    if (bytes <= 0)
+        return 0;
+
+    if (!this->bus_obj->push_data(this->dst_id, buf, bytes))
+        return 0;
+
+    this->to_xfer -= bytes;
+    if (this->to_xfer <= 0) {
+        this->xfer_count = this->to_xfer;
+        this->cur_state = SeqState::XFER_END;
+        this->sequencer();
+    }
+    return bytes;
 }
 
 void ScsiBusController::update_irq() {

@@ -81,7 +81,11 @@ void DMAChannel::interpret_cmd() {
     case DBDMA_Cmd::INPUT_MORE:
     case DBDMA_Cmd::INPUT_LAST:
         if (cmd_struct.cmd_key & 7) {
-            LOG_F(ERROR, "%s: Key > 0 not implemented", this->get_name().c_str());
+            LOG_F(WARNING, "%s: stopping channel after unsupported key %d",
+                  this->get_name().c_str(), cmd_struct.cmd_key & 7);
+            this->ch_stat |= CH_STAT_DEAD;
+            this->ch_stat &= ~CH_STAT_ACTIVE;
+            this->cmd_in_progress = false;
             break;
         }
         if (cmd_struct.req_count) {
@@ -174,6 +178,8 @@ void DMAChannel::update_cmd() {
 
 void DMAChannel::finish_cmd() {
     bool   branch_taken = false;
+    bool   quad_cmd = this->cur_cmd == DBDMA_Cmd::STORE_QUAD ||
+                      this->cur_cmd == DBDMA_Cmd::LOAD_QUAD;
 
     // save interrupt bits from the completing command before cmd_ptr may change
     uint8_t saved_cmd_bits = this->cur_host->cmd_bits;
@@ -198,8 +204,8 @@ void DMAChannel::finish_cmd() {
 
         this->ch_stat &= ~CH_STAT_BT;
 
-        // react to cmd.b (branch) bits
-        if (saved_cmd_bits & 0xC) {
+        // react to cmd.b (branch) bits; QUAD commands don't support branching
+        if (!quad_cmd && (saved_cmd_bits & 0xC)) {
             bool cond = true;
             if ((saved_cmd_bits & 0xC) != 0xC) {
                 uint16_t br_mask = this->branch_select >> 16;
@@ -251,7 +257,15 @@ void DMAChannel::xfer_quad(bool is_store) {
         addr &= ~(xfer_size - 1);
     }
 
-    res = mmu_map_dma_mem(addr, xfer_size, true);
+    res = mmu_map_dma_mem(addr, xfer_size, true, false, true);
+    if (res.type == RT_NONE) {
+        LOG_F(WARNING, "%s: stopping QUAD access to unmapped address 0x%08X",
+              this->get_name().c_str(), addr);
+        this->ch_stat |= CH_STAT_DEAD;
+        this->ch_stat &= ~CH_STAT_ACTIVE;
+        this->cmd_in_progress = false;
+        return;
+    }
 
     // prepare data pointers and perform data transfer
     if (is_store) {

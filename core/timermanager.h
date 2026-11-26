@@ -24,6 +24,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <atomic>
 #include <algorithm>
+#include <chrono>
 #include <cinttypes>
 #include <functional>
 #include <memory>
@@ -145,7 +146,13 @@ public:
 
 private:
     static TimerManager* timer_manager;
-    TimerManager(){} // private constructor to implement a singleton
+    TimerManager() {
+        this->get_time_now = []() {
+            return (uint64_t)std::chrono::duration_cast<std::chrono::nanoseconds>(
+                std::chrono::steady_clock::now().time_since_epoch()).count();
+        };
+        this->notify_timer_changes = []() {};
+    } // private constructor to implement a singleton
 
     // timer queue
     my_priority_queue<TimerInfo*, std::vector<TimerInfo*>, MyGtComparator> timer_queue;

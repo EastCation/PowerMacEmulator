@@ -27,6 +27,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <devices/common/hwinterrupt.h>
 #include <devices/floppy/superdrive.h>
 #include <devices/floppy/swim3.h>
+#include <frontend/runtime.h>
 #include <loguru.hpp>
 #include <machines/machinebase.h>
 #include <machines/machineproperties.h>
@@ -48,6 +49,22 @@ Swim3Ctrl::Swim3Ctrl()
     // TODO: make SWIM3/drive wiring user selectable
     this->int_drive = std::unique_ptr<MacSuperdrive::MacSuperDrive>
         (new MacSuperdrive::MacSuperDrive("Superdrive1"));
+}
+
+bool Swim3Ctrl::insert_floppy(const std::string& img_path, bool write_protect)
+{
+    if (!this->int_drive || img_path.empty())
+        return false;
+    this->int_drive->eject_disk();
+    std::string path = img_path;
+    this->int_drive->insert_disk(path, write_protect ? 1 : 0);
+    return this->int_drive->is_disk_inserted();
+}
+
+void Swim3Ctrl::eject_floppy()
+{
+    if (this->int_drive)
+        this->int_drive->eject_disk();
 }
 
 void Swim3Ctrl::reset()
@@ -305,11 +322,6 @@ void Swim3Ctrl::start_disk_access()
         return;
     }
 
-    if (this->mode_reg & SWIM3_WR_MODE) {
-        LOG_F(ERROR, "SWIM3: writing not implemented yet");
-        return;
-    }
-
     this->mode_reg |= SWIM3_GO;
     LOG_F(9, "SWIM3: disk access started!");
 
@@ -350,8 +362,33 @@ void Swim3Ctrl::disk_access()
         }
         break;
     case SWIM3_DATA_XFER:
-        // transfer sector data over DMA
-        this->dma_ch->push_data(this->int_drive->get_sector_data_ptr(this->cur_sector & 0x7F), 512);
+        if (this->mode_reg & SWIM3_WR_MODE) {
+            if (this->int_drive->is_write_protected()) {
+                this->error      |= 0x40;
+                this->int_flags  |= INT_SECT_DONE | INT_ERROR;
+                this->stop_disk_access();
+                update_irq();
+                return;
+            }
+
+            uint32_t avail = 0;
+            uint8_t* data = nullptr;
+            DmaPullResult res = this->dma_ch->pull_data(512, &avail, &data);
+            if (res != DmaPullResult::MoreData || avail < 512) {
+                // DMA is not ready yet; retry shortly.
+                TimerManager::get_instance()->add_oneshot_timer(
+                    this->access_timer, USECS_TO_NSECS(500),
+                    [this](uint64_t, uint64_t) { this->disk_access(); });
+                return;
+            }
+            std::memcpy(this->int_drive->get_sector_data_ptr(this->cur_sector & 0x7F), data, 512);
+            this->int_drive->save_disk();
+            frontend_activity(DeviceActivity::Floppy, true);
+        } else {
+            // transfer sector data over DMA
+            frontend_activity(DeviceActivity::Floppy, false);
+            this->dma_ch->push_data(this->int_drive->get_sector_data_ptr(this->cur_sector & 0x7F), 512);
+        }
         if (--this->xfer_cnt == 0) {
             this->stop_disk_access();
             // generate sector_done interrupt

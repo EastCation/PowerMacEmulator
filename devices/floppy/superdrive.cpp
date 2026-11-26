@@ -25,6 +25,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <loguru.hpp>
 
 #include <cinttypes>
+#include <fstream>
 
 namespace loguru {
     enum : Verbosity {
@@ -220,6 +221,23 @@ uint8_t MacSuperDrive::status(uint8_t addr)
     }
     LOG_F(SUPERDRIVE, "%s: status %-13s 0x%X = %d", this->get_name().c_str(), get_status_name(addr).c_str(), addr, value);
     return value;
+}
+
+void MacSuperDrive::eject_disk()
+{
+    this->save_disk();
+    this->command(CommandAddr::Eject_Disk, 1);
+}
+
+void MacSuperDrive::save_disk()
+{
+    if (!this->has_disk || this->wr_protect || !this->img_conv || !this->disk_data)
+        return;
+
+    std::ofstream out(this->img_conv->get_img_path(), std::ios::binary | std::ios::trunc);
+    if (!out)
+        return;
+    out.write(this->disk_data.get(), this->img_conv->get_data_size());
 }
 
 int MacSuperDrive::insert_disk(std::string& img_path, int write_flag = 0)

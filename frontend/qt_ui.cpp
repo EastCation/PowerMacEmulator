@@ -47,7 +47,7 @@
 #include <QPainter>
 #include <QMouseEvent>
 #include <QWheelEvent>
-#include <cstring>
+#include <cstring>\n#include <vector>
 
 #include <loguru.hpp>
 #include <QKeyEvent>
@@ -495,6 +495,81 @@ private:
     int last_x_ = 0;
     int last_y_ = 0;
 };
+class ActivityIcon : public QWidget {
+public:
+    ActivityIcon(DeviceActivity kind, QWidget* parent = nullptr)
+        : QWidget(parent), kind_(kind)
+    {
+        setFixedSize(30, 20);
+        setToolTip(kind == DeviceActivity::Hdd ? "Hard disk" :
+                   kind == DeviceActivity::Cdrom ? "CD-ROM" :
+                   kind == DeviceActivity::Floppy ? "Floppy" : "Network");
+    }
+
+    void poll()
+    {
+        uint32_t serial = frontend_activity_serial(kind_);
+        if (serial != serial_) {
+            serial_ = serial;
+            lit_ = true;
+            write_ = frontend_activity_write(kind_);
+            update();
+            QTimer::singleShot(180, this, [this] {
+                lit_ = false;
+                update();
+            });
+        }
+    }
+
+protected:
+    void paintEvent(QPaintEvent*) override
+    {
+        QPainter p(this);
+        p.setRenderHint(QPainter::Antialiasing, true);
+        p.setPen(QPen(QColor(90, 90, 90), 1));
+        p.setBrush(QColor(210, 210, 210));
+
+        switch (kind_) {
+        case DeviceActivity::Hdd:
+            p.drawRoundedRect(QRectF(1, 4, 18, 12), 2, 2);
+            p.drawLine(QPointF(4, 8), QPointF(16, 8));
+            p.drawLine(QPointF(4, 11), QPointF(12, 11));
+            break;
+        case DeviceActivity::Cdrom:
+            p.drawEllipse(QRectF(1, 3, 18, 18));
+            p.setBrush(QColor(120, 120, 120));
+            p.drawEllipse(QRectF(7, 9, 6, 6));
+            break;
+        case DeviceActivity::Floppy:
+            p.drawRect(QRectF(1, 3, 18, 16));
+            p.setBrush(QColor(130, 130, 130));
+            p.drawRect(QRectF(6, 3, 8, 6));
+            p.setBrush(QColor(210, 210, 210));
+            p.drawRect(QRectF(5, 12, 10, 6));
+            break;
+        case DeviceActivity::Network:
+            p.drawRect(QRectF(1, 4, 10, 8));
+            p.drawRect(QRectF(9, 9, 10, 8));
+            p.drawLine(QPointF(4, 7), QPointF(8, 7));
+            p.drawLine(QPointF(12, 12), QPointF(16, 12));
+            break;
+        }
+
+        QColor led = QColor(70, 70, 70);
+        if (lit_)
+            led = write_ ? QColor(220, 40, 40) : QColor(40, 210, 70);
+        p.setPen(Qt::NoPen);
+        p.setBrush(led);
+        p.drawEllipse(QRectF(21, 6, 7, 7));
+    }
+
+private:
+    DeviceActivity kind_;
+    uint32_t serial_ = 0;
+    bool lit_ = false;
+    bool write_ = false;
+};
+
 class EmuWindow : public QMainWindow {
 public:
     EmuWindow()
@@ -535,6 +610,8 @@ public:
         auto* actChangeCd = vm->addAction(
             style()->standardIcon(QStyle::SP_DialogOpenButton), "&Change CD Image...");
         auto* actEject = vm->addAction(style()->standardIcon(QStyle::SP_DriveCDIcon), "&Eject Media");
+        auto* actInsertFloppy = vm->addAction("Insert &Floppy Image...");
+        auto* actEjectFloppy = vm->addAction("Eject &Floppy");
 
         auto* actFull = view->addAction("&Full Screen");
         auto* actAbout = help->addAction("&About");
@@ -547,6 +624,8 @@ public:
         tb->addAction(actReset);
         tb->addAction(actChangeCd);
         tb->addAction(actEject);
+        tb->addAction(actInsertFloppy);
+        tb->addAction(actEjectFloppy);
         tb->addSeparator();
         tb->addAction(actSettings);
 
@@ -573,6 +652,16 @@ public:
             frontend_eject_cdrom();
             statusBar()->showMessage("Ejecting media...");
         });
+        connect(actInsertFloppy, &QAction::triggered, this, [this] {
+            chooseFloppyImage();
+        });
+        connect(actEjectFloppy, &QAction::triggered, this, [this] {
+            frontend_eject_floppy();
+            auto& cfg = frontend::cfg();
+            cfg.fdd_img.clear();
+            frontend::save_config(frontend::active_config_path());
+            statusBar()->showMessage("Floppy ejected");
+        });
         connect(actSettings, &QAction::triggered, this, &EmuWindow::openSettings);
         connect(actVmManager, &QAction::triggered, this, &EmuWindow::launchVmManager);
         connect(actExit, &QAction::triggered, this, [this] {
@@ -593,6 +682,28 @@ public:
             lastCdPath_ = toQ(frontend::cfg().scsi_cd[0]);
         else if (!frontend::cfg().ide_cd.empty())
             lastCdPath_ = toQ(frontend::cfg().ide_cd);
+
+        auto addActivity = [this](DeviceActivity kind, bool visible) {
+            if (!visible)
+                return;
+            auto* icon = new ActivityIcon(kind, this);
+            activity_icons_.push_back(icon);
+            statusBar()->addPermanentWidget(icon);
+        };
+        const auto& cfg = frontend::cfg();
+        addActivity(DeviceActivity::Hdd,
+                    !cfg.scsi_hdd.empty() || !cfg.ide_hdd.empty());
+        addActivity(DeviceActivity::Cdrom,
+                    !cfg.scsi_cd.empty() || !cfg.ide_cd.empty());
+        addActivity(DeviceActivity::Floppy, true);
+        addActivity(DeviceActivity::Network, cfg.net_enabled);
+
+        auto* activity_timer = new QTimer(this);
+        connect(activity_timer, &QTimer::timeout, this, [this] {
+            for (auto* icon : activity_icons_)
+                icon->poll();
+        });
+        activity_timer->start(50);
 
         capsLed_    = new QLabel("CapsLk", this);
         numLed_     = new QLabel("NumLk", this);
@@ -776,6 +887,28 @@ public:
             applyCdImage(f);
     }
 
+    void chooseFloppyImage()
+    {
+        QString start = toQ(frontend::cfg().fdd_img);
+        QString f = QFileDialog::getOpenFileName(this, "Insert Floppy Image",
+            start, "Floppy images (*.dsk *.img *.ima *.vfd *.hfs *.mfm *.raw);;All files (*)");
+        if (!f.isEmpty())
+            applyFloppyImage(f);
+    }
+
+    void applyFloppyImage(const QString& f)
+    {
+        auto& cfg = frontend::cfg();
+        if (frontend_swap_floppy(toS(f), cfg.fdd_wr_prot)) {
+            cfg.fdd_img = toS(f);
+            frontend::save_config(frontend::active_config_path());
+            statusBar()->showMessage("Inserted floppy: " + f);
+        } else {
+            QMessageBox::warning(this, "Floppy",
+                "Could not insert the floppy image.\n\n" + f);
+        }
+    }
+
     void applyCdImage(const QString& f)
     {
         lastCdPath_ = f;
@@ -939,6 +1072,7 @@ public:
     bool     numOn_ = false;
     bool     scrollOn_ = false;
     QString  lastCdPath_;
+    std::vector<ActivityIcon*> activity_icons_;
 };
 
 QApplication* g_app = nullptr;

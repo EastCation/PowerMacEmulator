@@ -105,6 +105,10 @@ public:
     void command(uint8_t addr, uint8_t value);
     uint8_t status(uint8_t addr);
     int insert_disk(std::string& img_path, int write_flag);
+    void eject_disk();
+    void save_disk();
+    bool is_disk_inserted() const { return this->has_disk != 0; }
+    bool is_write_protected() const { return this->wr_protect != 0; }
     void set_motor_stat(uint8_t new_motor_stat);
     void init_track_search(int pos);
     uint64_t sync_to_disk();

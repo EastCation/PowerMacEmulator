@@ -16,6 +16,12 @@
 /** Set by the UI "Pause" action; checked by the CPU loop. */
 extern bool g_emulator_paused;
 
+enum class DeviceActivity : int { Hdd = 0, Cdrom = 1, Floppy = 2, Network = 3 };
+
+void frontend_activity(DeviceActivity kind, bool write);
+uint32_t frontend_activity_serial(DeviceActivity kind);
+bool frontend_activity_write(DeviceActivity kind);
+
 /** Called while the guest is paused: pumps the UI and sleeps briefly. */
 void frontend_idle();
 
@@ -27,6 +33,10 @@ void frontend_eject_cdrom();
 
 /** Ejects current media (if any) and inserts another CD image at runtime. */
 bool frontend_swap_cdrom(const std::string& path);
+
+/** Ejects the floppy and inserts a new image. */
+bool frontend_swap_floppy(const std::string& path, bool write_protect);
+void frontend_eject_floppy();
 
 /** Qt front-end entry points (no-ops unless built with Qt). */
 void frontend_qt_init();

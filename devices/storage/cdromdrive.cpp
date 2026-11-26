@@ -35,6 +35,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 #include <string>
 
 CdromDrive::CdromDrive() : BlockStorageDevice(31, CDR_STD_DATA_SIZE, 0xfffffffe) {
+    this->activity_kind = 1;
     EventManager::get_instance()->add_cdrom_handler(
         this, &CdromDrive::insert_image_event_handler);
 

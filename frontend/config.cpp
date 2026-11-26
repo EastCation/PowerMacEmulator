@@ -161,6 +161,9 @@ bool load_config(const std::string& path)
             else if (key == "ide_hdd")  c.ide_hdd  = val;
             else if (key == "ide_hdd2") c.ide_hdd2 = val;
             else if (key == "ide_cd")   c.ide_cd   = val;
+            else if (key == "fdd_img")  c.fdd_img  = val;
+            else if (key == "fdd_wr_prot") c.fdd_wr_prot = parse_bool(val, c.fdd_wr_prot);
+            else if (key == "fdd_fmt")  c.fdd_fmt  = val;
         } else if (section == "video") {
             if      (key == "pci_gpu")    c.pci_gpu = val;
             else if (key == "scale")      c.scale = parse_int(val, c.scale);
@@ -211,7 +214,10 @@ bool save_config(const std::string& path)
     out << "boot_cd=" << (g_cfg.boot_cd ? 1 : 0) << "\n";
     out << "ide_hdd=" << g_cfg.ide_hdd << "\n";
     out << "ide_hdd2=" << g_cfg.ide_hdd2 << "\n";
-    out << "ide_cd=" << g_cfg.ide_cd << "\n\n";
+    out << "ide_cd=" << g_cfg.ide_cd << "\n";
+    out << "fdd_img=" << g_cfg.fdd_img << "\n";
+    out << "fdd_wr_prot=" << (g_cfg.fdd_wr_prot ? 1 : 0) << "\n";
+    out << "fdd_fmt=" << g_cfg.fdd_fmt << "\n\n";
 
     out << "[Network]\n";
     out << "enabled=" << (g_cfg.net_enabled ? 1 : 0) << "\n\n";
@@ -257,10 +263,8 @@ void apply_rhapsody_profile()
     g_cfg.rhapsody = true;
 
     if (g_cfg.rhapsody_dr1) {
-        if (g_cfg.machine != "pm8500" && g_cfg.machine != "pm9500" &&
-            g_cfg.machine != "pm9600")
-            g_cfg.machine = "pm9600";
-        g_cfg.cpu = "604e";
+        g_cfg.machine = "pm8500";
+        g_cfg.cpu = "604";
         if (g_cfg.ram_mb < 512)
             g_cfg.ram_mb = 512;
         g_cfg.hdd_bus = "curio";
@@ -345,7 +349,7 @@ std::map<std::string, std::string> build_properties()
         p["cdr_config"] = "ScsiMesh:3";
     } else {
         p["cdr_img"] = join_list(g_cfg.scsi_cd, ';');
-        p["cdr_config"] = "ScsiCurio:3";
+        p["cdr_config"] = g_cfg.rhapsody_dr1 ? "ScsiCurio:1" : "ScsiCurio:3";
     }
 
     // Optional IDE controller. Gossamer/Beige G3 uses the built-in MacIO
@@ -363,6 +367,9 @@ std::map<std::string, std::string> build_properties()
     }
 
     // Network card can be unplugged from the VM settings.
+    p["fdd_img"] = g_cfg.fdd_img;
+    p["fdd_wr_prot"] = g_cfg.fdd_wr_prot ? "1" : "0";
+    p["fdd_fmt"] = g_cfg.fdd_fmt;
     p["net_enabled"] = g_cfg.net_enabled ? "1" : "0";
     p["screamer"] = g_cfg.sound_enabled ? "1" : "0";
 

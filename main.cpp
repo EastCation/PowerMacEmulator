@@ -520,9 +520,9 @@ int main(int argc, char** argv) {
         loguru::g_stderr_verbosity = loguru::Verbosity_OFF;
         loguru::init(argc, argv);
 #ifdef POWERMAC_RHAPSODY
-        loguru::add_file("rhapsody.log", loguru::Append, log_verbosity);
+        loguru::add_file("rhapsody.log", loguru::Truncate, log_verbosity);
 #else
-        loguru::add_file("dingusppc.log", loguru::Append, log_verbosity);
+        loguru::add_file("dingusppc.log", loguru::Truncate, log_verbosity);
 #endif
     } else {
         loguru::g_stderr_verbosity = log_verbosity;
@@ -799,15 +799,17 @@ void run_machine(std::string machine_str, char* rom_data,
 
     if (frontend::cfg().boot_cd) {
         std::thread([] {
-            std::this_thread::sleep_for(std::chrono::milliseconds(500));
+            std::this_thread::sleep_for(std::chrono::seconds(2));
             SDL_Event ev{};
             ev.type = SDL_KEYDOWN;
             ev.key.state = SDL_PRESSED;
             ev.key.repeat = 0;
             ev.key.keysym.sym = SDLK_c;
             ev.key.keysym.scancode = SDL_SCANCODE_C;
-            SDL_PushEvent(&ev);
-            std::this_thread::sleep_for(std::chrono::seconds(12));
+            for (int i = 0; i < 60; i++) {
+                SDL_PushEvent(&ev);
+                std::this_thread::sleep_for(std::chrono::milliseconds(200));
+            }
             ev.type = SDL_KEYUP;
             ev.key.state = SDL_RELEASED;
             SDL_PushEvent(&ev);

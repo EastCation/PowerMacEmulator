@@ -54,6 +54,10 @@ public:
         return this->data_size;
     }
 
+    std::string get_img_path() const {
+        return this->img_path;
+    }
+
     int get_disk_rec_method() const {
         return this->rec_method;
     }

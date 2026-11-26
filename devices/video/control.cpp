@@ -561,28 +561,36 @@ void ControlVideo::write(uint32_t rgn_start, uint32_t offset, uint32_t value, in
             if (value)
                 LOG_F(WARNING, "%s: CNTTST set to 0x%X", this->name.c_str(), value);
             break;
-        case ControlRegs::SWATCH_CTRL:
+        case ControlRegs::SWATCH_CTRL: {
             value &= 0x7FF;
-            if ((this->swatch_ctrl ^ value) & DISABLE_TIMING) {
-                this->swatch_ctrl = value;
+            uint32_t old_value = this->swatch_ctrl;
+            bool disable_changed = (old_value ^ value) & DISABLE_TIMING;
+            bool reset_rising = !(old_value & RESET_TIMING) && (value & RESET_TIMING);
+            this->swatch_ctrl = value;
+
+            if (disable_changed) {
                 this->strobe_counter = 0;
-            } else if ((this->swatch_ctrl ^ value) & RESET_TIMING) {
-                this->swatch_ctrl = value;
-                if (value & RESET_TIMING) { // count 0-to-1 transitions
-                    this->strobe_counter++;
-                    if (this->strobe_counter >= 2) {
-                        if (value & DISABLE_TIMING) {
-                            disable_display();
-                            this->display_enabled = false;
-                        } else {
-                            enable_display();
-                            this->display_enabled = true;
-                        }
+                if (value & DISABLE_TIMING) {
+                    disable_display();
+                    this->display_enabled = false;
+                } else {
+                    enable_display();
+                    this->display_enabled = true;
+                }
+            } else if (reset_rising) {
+                this->strobe_counter++;
+                if (this->strobe_counter >= 2) {
+                    if (value & DISABLE_TIMING) {
+                        disable_display();
+                        this->display_enabled = false;
+                    } else {
+                        enable_display();
+                        this->display_enabled = true;
                     }
                 }
-            } else
-                this->swatch_ctrl = value;
+            }
             break;
+        }
         case ControlRegs::GBASE:{
             uint32_t old_value = this->fb_base;
             uint32_t new_value = value & 0x3FFFE0;

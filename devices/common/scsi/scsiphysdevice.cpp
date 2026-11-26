@@ -224,8 +224,8 @@ int ScsiPhysDevice::xfer_data() {
         }
         break;
     default:
-        ABORT_F("%s: unhandled phase %d in xfer_data()", this->name.c_str(),
-                this->cur_phase);
+        LOG_F(WARNING, "%s: ignoring xfer_data() in phase %d", this->name.c_str(),
+              this->cur_phase);
     }
 
     return 0;

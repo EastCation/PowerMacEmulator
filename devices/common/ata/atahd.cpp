@@ -23,6 +23,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 
 #include <core/memaccess.h>
 #include <devices/common/ata/atahd.h>
+#include <frontend/runtime.h>
 #include <devices/deviceregistry.h>
 #include <devices/common/ata/idechannel.h>
 #include <loguru.hpp>
@@ -105,6 +106,7 @@ int AtaHardDisk::perform_command() {
     case READ_SECTOR_NR:
     case READ_DMA:
     case READ_DMA_NR: {
+            frontend_activity(DeviceActivity::Hdd, false);
             uint16_t sec_count = this->r_sect_count ? this->r_sect_count : 256;
             int      xfer_size = sec_count * ATA_HD_SEC_SIZE;
             uint64_t offset    = this->get_lba() * ATA_HD_SEC_SIZE;
@@ -141,6 +143,7 @@ int AtaHardDisk::perform_command() {
     case WRITE_SECTOR_NR:
     case WRITE_DMA:
     case WRITE_DMA_NR: {
+            frontend_activity(DeviceActivity::Hdd, true);
             uint16_t sec_count = this->r_sect_count ? this->r_sect_count : 256;
             uint32_t xfer_size = sec_count * ATA_HD_SEC_SIZE;
             bool     is_dma_cmd = this->r_command == WRITE_DMA ||

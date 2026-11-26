@@ -204,7 +204,7 @@ static const char *get_name_dma(unsigned dma_channel) {
 // The first 3 bytes of a MAC address is an OUI for "Apple, Inc."
 // A MAC address cannot begin with 0x10 because that will get bit-flipped to 0x08.
 // A MAC address that begins with 0x08 can be stored as bit-flipped or not bit-flipped.
-static uint8_t mac_address[] = { 0x08, 0x00, 0x07, 0x44, 0x55, 0x66, 0x00, 0x00 };
+static uint8_t mac_address[] = { 0x08, 0x00, 0x07, 0x12, 0x34, 0x56, 0x80, 0x00 };
 static bool bit_flip_0x08 = false;
 
 uint32_t GrandCentral::read(uint32_t rgn_start, uint32_t offset, int size)

@@ -100,6 +100,8 @@ uint8_t MeshController::read(uint8_t reg_offset) {
         return this->int_mask;
     case MeshReg::Interrupt:
         return this->int_stat;
+    case MeshReg::SourceID:
+        return this->src_id;
     case MeshReg::DestID:
         return this->dst_id;
     case MeshReg::SyncParms:
@@ -125,6 +127,16 @@ void MeshController::write(uint8_t reg_offset, uint8_t value) {
         break;
     case MeshReg::FIFO:
         this->fifo_push(value);
+        // The Linux driver writes the command/message length, then the
+        // sequence command, and only afterwards fills the FIFO. Start the
+        // sequencer once the advertised number of bytes has arrived.
+        if (this->cur_state == Scsi_Bus_Controller::SeqState::SEND_CMD &&
+            this->xfer_count && this->fifo_pos >= this->xfer_count) {
+            this->sequencer();
+        } else if (this->cur_state == Scsi_Bus_Controller::SeqState::SEND_MSG &&
+                   this->xfer_count && this->fifo_pos >= this->xfer_count) {
+            this->sequencer();
+        }
         break;
     case MeshReg::Sequence:
         perform_command(value);
@@ -134,6 +146,12 @@ void MeshController::write(uint8_t reg_offset, uint8_t value) {
         break;
     case MeshReg::BusStatus1:
         this->update_bus_status((this->bus_stat & 0xFFU) | (value << 8));
+        break;
+    case MeshReg::Exception:
+        this->exception &= ~value;
+        break;
+    case MeshReg::Error:
+        this->error = value;
         break;
     case MeshReg::IntMask:
         this->int_mask = value;

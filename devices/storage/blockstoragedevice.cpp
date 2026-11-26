@@ -22,6 +22,7 @@ along with this program.  If not, see <https://www.gnu.org/licenses/>.
 /** @file Block storage device implementation. */
 
 #include <devices/storage/blockstoragedevice.h>
+#include <frontend/runtime.h>
 #include <loguru.hpp>
 
 #include <cstring>
@@ -122,6 +123,7 @@ void BlockStorageDevice::fill_cache(const int nblocks) {
 }
 
 int BlockStorageDevice::read_begin(int nblocks, uint32_t max_len) {
+    frontend_activity((DeviceActivity)this->activity_kind, false);
     uint32_t xfer_len = std::min(this->cache_blocks * this->block_size, max_len);
     uint32_t read_size = nblocks * this->block_size;
     if (read_size > xfer_len) {
@@ -154,6 +156,7 @@ int BlockStorageDevice::read_more() {
 }
 
 int BlockStorageDevice::write_begin(int nblocks, uint32_t max_len) {
+    frontend_activity((DeviceActivity)this->activity_kind, true);
     if (!this->is_writeable)
         ABORT_F("write attempt to read-only block storage device");
 

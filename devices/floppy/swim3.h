@@ -103,6 +103,9 @@ public:
         this->dma_ch = dma_ch;
     }
 
+    bool insert_floppy(const std::string& img_path, bool write_protect);
+    void eject_floppy();
+
 protected:
     void    reset();
     void    update_irq();

@@ -19,6 +19,47 @@ set(CMAKE_INCLUDE_CURRENT_DIR ON)
 set(CMAKE_RUNTIME_OUTPUT_DIRECTORY ${CMAKE_BINARY_DIR}/bin)
 
 # ----------------------------------------------------------------------------
+# Optional libslirp user-mode networking (Windows prebuilt runtime)
+# ----------------------------------------------------------------------------
+set(LIBSLIRP_DIR "E:/qemu" CACHE PATH "Directory containing libslirp-0.dll and its DLL dependencies")
+set(LIBSLIRP_AVAILABLE FALSE)
+if (WIN32)
+    set(LIBSLIRP_INCLUDE_DIR "${CMAKE_SOURCE_DIR}/thirdparty/libslirp/include")
+    set(LIBSLIRP_IMPORT_LIB "${CMAKE_SOURCE_DIR}/thirdparty/libslirp/libslirp.lib")
+    if (EXISTS "${LIBSLIRP_IMPORT_LIB}" AND EXISTS "${LIBSLIRP_DIR}/libslirp-0.dll")
+        set(LIBSLIRP_AVAILABLE TRUE)
+        add_library(libslirp INTERFACE)
+        target_include_directories(libslirp INTERFACE "${LIBSLIRP_INCLUDE_DIR}")
+        target_link_libraries(libslirp INTERFACE "${LIBSLIRP_IMPORT_LIB}")
+        set(LIBSLIRP_RUNTIME_DLLS
+            "${LIBSLIRP_DIR}/libslirp-0.dll"
+            "${LIBSLIRP_DIR}/libglib-2.0-0.dll"
+            "${LIBSLIRP_DIR}/libintl-8.dll"
+            "${LIBSLIRP_DIR}/libiconv-2.dll"
+            "${LIBSLIRP_DIR}/libpcre2-8-0.dll"
+            "${LIBSLIRP_DIR}/libffi-8.dll"
+            "${LIBSLIRP_DIR}/zlib1.dll")
+        message(STATUS "libslirp: using ${LIBSLIRP_DIR}")
+    else()
+        message(STATUS "libslirp: not found, user-mode networking disabled")
+    endif()
+endif()
+function(powermac_link_slirp target_name)
+    if (LIBSLIRP_AVAILABLE)
+        target_link_libraries(${target_name} PRIVATE libslirp ws2_32)
+        if (WIN32)
+            foreach (slirp_dll IN LISTS LIBSLIRP_RUNTIME_DLLS)
+                if (EXISTS "${slirp_dll}")
+                    add_custom_command(TARGET ${target_name} POST_BUILD
+                        COMMAND ${CMAKE_COMMAND} -E copy_if_different
+                            "${slirp_dll}" "$<TARGET_FILE_DIR:${target_name}>"
+                        VERBATIM)
+                endif()
+            endforeach()
+        endif()
+    endif()
+endfunction()
+# ----------------------------------------------------------------------------
 # SDL2
 # ----------------------------------------------------------------------------
 if (WIN32)
@@ -182,6 +223,8 @@ if (DPPC_68K_DEBUGGER)
     target_link_libraries(PowerMacEmulator PRIVATE capstone)
 endif()
 
+powermac_link_slirp(PowerMacEmulator)
+
 set_target_properties(PowerMacEmulator PROPERTIES
     OUTPUT_NAME "PowerMacEmulator"
 )
@@ -241,6 +284,8 @@ endif()
 if (DPPC_68K_DEBUGGER)
     target_link_libraries(RhapsodyEmulator PRIVATE capstone)
 endif()
+
+powermac_link_slirp(RhapsodyEmulator)
 
 set_target_properties(RhapsodyEmulator PROPERTIES
     OUTPUT_NAME "RhapsodyEmulator"
